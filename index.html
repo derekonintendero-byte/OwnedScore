@@ -294,6 +294,25 @@
 <script type="module" src="auth.js"></script>
 <script type="module" src="register.js"></script>
 <script type="module" src="user-state.js"></script>
+<script>
+  const loginBtnNav = document.querySelector('.nav-cta');
+  const loginModal = document.getElementById('loginModal');
+  const closeModal = document.getElementById('closeModal');
+
+  loginBtnNav.addEventListener('click', () => {
+    loginModal.style.display = 'flex';
+  });
+
+  closeModal.addEventListener('click', () => {
+    loginModal.style.display = 'none';
+  });
+
+  loginModal.addEventListener('click', (e) => {
+    if (e.target === loginModal) {
+      loginModal.style.display = 'none';
+    }
+  });
+</script>
 
 </body>
 </html>
