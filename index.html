@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>OwnedScore – La verdad del jugador</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #05060a;
+      color: #f5f5f5;
+      line-height: 1.5;
+    }
+    .header, .main, .footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #222;
+    }
+    .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
+    .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
+    .nav { display: flex; gap: 1rem; }
+    .nav-link {
+      font-size: 0.95rem; color: #ddd; text-decoration: none;
+      padding: 0.4rem 0.7rem; border-radius: 999px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-link:hover { background: #1b1f2b; color: #fff; }
+    .nav-cta { background: #4fd1ff; color: #05060a; font-weight: 600; }
+
+    .hero {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      border-bottom: 1px solid #222;
+    }
+    .hero-text h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .hero-text p { color: #ccc; max-width: 700px; }
+    .search-bar {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 0.7rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid #333;
+      background: #0b0d13;
+      color: #f5f5f5;
+    }
+    .search-bar button {
+      padding: 0.7rem 1.2rem;
+      border-radius: 999px;
+      border: none;
+      background: #4fd1ff;
+      color: #05060a;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .search-bar button:hover { background: #35b9e6; }
+
+    .section { max-width: 1200px; margin: 2rem auto 0; padding: 0 1.5rem; }
+    .section h2 { font-size: 1.4rem; margin-bottom: 1rem; }
+
+    .game-result {
+      background: #0b0d13;
+      border-radius: 0.8rem;
+      padding: 1rem;
+      border: 1px solid #1b1f2b;
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
+      gap: 1rem;
+    }
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 0.8rem;
+      border: 1px solid #22263a;
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: 0;
+    }
+    .no-result {
+      background: #11131b;
+      border-radius: 0.8rem;
+      padding: 1rem;
+      border: 1px solid #22263a;
+      font-size: 0.95rem;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">
+      <span class="logo-main">OwnedScore</span>
+      <span class="logo-sub">La verdad del videojuego la dice quien lo juega.</span>
+    </div>
+    <nav class="nav">
+      <a class="nav-link">Inicio</a>
+      <a class="nav-link">Juegos</a>
+      <a class="nav-link">Ranking</a>
+      <a class="nav-link">Mi perfil</a>
+      <a class="nav-link nav-cta">Iniciar sesión</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Puntuaciones reales de jugadores verificados</h1>
+      <p>Aquí no gana quien paga: gana la realidad.</p>
+    </div>
+
+    <form class="search-bar" id="searchForm">
+      <input id="searchInput" type="text" placeholder="Buscar cualquier juego..." />
+      <button type="submit">Buscar</button>
+    </form>
+  </section>
+
+  <main class="main">
+    <section class="section">
+      <h2>Resultado de búsqueda</h2>
+      <div id="resultContainer"></div>
+    </section>
+  </main>
+
+  <script>
+    let games = [];
+
+    // Carga tu base gigante automáticamente
+    fetch("https://ownedscore.netlify.app/games.json")
+      .then(res => res.json())
+      .then(data => games = data);
+
+    const form = document.getElementById("searchForm");
+    const input = document.getElementById("searchInput");
+    const result = document.getElementById("resultContainer");
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const q = input.value.trim().toLowerCase();
+
+      const game = games.find(g => g.name.toLowerCase() === q);
+
+      if (!game) {
+        result.innerHTML = `<div class="no-result">No se encontró <strong>${q}</strong>.</div>`;
+        return;
+      }
+
+      result.innerHTML = `
+        <div class="game-result">
+          <div>
+            <h3>${game.name}</h3>
+            <p><strong>Desarrollador:</strong> ${game.developer}</p>
+            <p><strong>Plataformas:</strong> ${game.platforms}</p>
+            <p><strong>Lanzamiento:</strong> ${game.release}</p>
+            <p><strong>Puntuación:</strong> ${game.score}/100</p>
+            <p>${game.description}</p>
+          </div>
+          <div class="video-wrapper">
+            <iframe src="${game.videoUrl}" allowfullscreen></iframe>
+          </div>
+        </div>
+      `;
+    });
+  </script>
+
+</body>
+</html>
