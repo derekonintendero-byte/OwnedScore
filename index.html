@@ -239,7 +239,7 @@
       width: 100%;
       padding: 0.5rem;
       border-radius: 0.5rem;
-      border: none;
+      border: 1px solid #333;
       background: #0b0d13;
       color: #fff;
       text-align: center;
@@ -378,54 +378,109 @@
     </section>
   </main>
 
-  <!-- RAWG + OWNEDSCORE -->
-  <script type="module" src="js/rawg.js"></script>
-  <script type="module" src="js/rating.js"></script>
-
-  <!-- LOGIN / REGISTER -->
-  <script type="module" src="auth.js"></script>
-  <script type="module" src="register.js"></script>
-
-  <!-- MENU -->
+  <!-- RAWG -->
   <script>
-    const hamburger = document.getElementById("hamburger");
-    const mobileMenu = document.getElementById("mobileMenu");
-    const mobileOverlay = document.getElementById("mobileOverlay");
+    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
 
-    function cerrarMenuMovil() {
-      mobileMenu.style.left = "-260px";
-      mobileOverlay.style.display = "none";
+    const form = document.getElementById("searchForm");
+    const input = document.getElementById("searchInput");
+    const result = document.getElementById("resultContainer");
+
+    function filtrarPlataformas(game) {
+      if (!game.platforms) return [];
+      const fecha = game.released ? new Date(game.released) : null;
+      const plataformas = game.platforms.map(p => p.platform.name);
+
+      let filtradas = plataformas;
+
+      if (fecha && fecha < new Date("2017-03-03")) {
+        filtradas = filtradas.filter(nombre => nombre !== "Nintendo Switch");
+      }
+
+      return [...new Set(filtradas)];
     }
 
-    hamburger.addEventListener("click", () => {
-      mobileMenu.style.left = "0px";
-      mobileOverlay.style.display = "block";
-    });
+    window.addEventListener("OwnedScoreSearch", async (ev) => {
+      const q = ev.detail;
 
-    mobileOverlay.addEventListener("click", cerrarMenuMovil);
-  </script>
+      result.innerHTML = `<div class="no-result">Buscando <strong>${q}</strong>...</div>`;
 
-  <!-- 🔥 FIX: BOTÓN INICIAR SESIÓN FUNCIONAL -->
-  <script>
-    const loginBtnNav = document.getElementById('loginBtnNav');
-    const loginModal = document.getElementById('loginModal');
-    const closeModal = document.getElementById('closeModal');
+      const res = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(q)}&key=${RAWG_KEY}`);
+      const data = await res.json();
 
-    loginBtnNav.addEventListener('click', (e) => {
-      e.preventDefault();
-      loginModal.style.display = 'flex';
-    });
-
-    closeModal.addEventListener('click', () => {
-      loginModal.style.display = 'none';
-    });
-
-    loginModal.addEventListener('click', (e) => {
-      if (e.target === loginModal) {
-        loginModal.style.display = 'none';
+      if (!data.results || data.results.length === 0) {
+        result.innerHTML = `<div class="no-result">No se encontró <strong>${q}</strong>.</div>`;
+        return;
       }
+
+      const game = data.results[0];
+      const gameId = game.id;
+
+      const trailerRes = await fetch(`https://api.rawg.io/api/games/${gameId}/movies?key=${RAWG_KEY}`);
+      const trailerData = await trailerRes.json();
+      const trailer = trailerData.results?.[0]?.data?.max;
+
+      const plataformasFiltradas = filtrarPlataformas(game);
+
+      result.innerHTML = `
+        <div class="game-result">
+          <div>
+            ${game.background_image ? `<img src="${game.background_image}" class="game-img">` : ""}
+            <h3>${game.name}</h3>
+            <p><strong>Géneros:</strong> ${game.genres?.map(g => g.name).join(", ")}</p>
+            <p><strong>Plataformas:</strong> ${plataformasFiltradas.join(", ")}</p>
+            <p><strong>Lanzamiento:</strong> ${game.released}</p>
+            <p><strong>Puntuación RAWG:</strong> ${game.rating}</p>
+          </div>
+
+          <div class="video-wrapper">
+            ${
+              trailer
+                ? `<iframe src="${trailer}" allowfullscreen></iframe>`
+                : `<div class="no-result">Sin trailer disponible.</div>`
+            }
+          </div>
+        </div>
+      `;
+
+      renderRatingBox(gameId);
     });
   </script>
 
-</body>
-</html>
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1X9V2uYV7eHkRkGk9Gk9Gk9Gk9Gk9Gk",
+      authDomain: "ownedscore.firebaseapp.com",
+      projectId: "ownedscore",
+      storageBucket: "ownedscore.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef123456"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loginBtnNav = document.getElementById("loginBtnNav");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const profileLink = document.getElementById("profileLink");
+    const mLogin = document.getElementById("mLogin");
+    const mLogout = document.getElementById("mLogout");
+    const mProfile = document.getElementById("mProfile");
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginBtnNav.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        profileLink.style.display = "inline-block";
+
+        mLogin.style.display = "none";
+        mLogout.style.display = "block";
+        mProfile.style.display = "block";
+      } else {
+        loginBtnNav
