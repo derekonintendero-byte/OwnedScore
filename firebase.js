@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBS7yzvyoSQfLlyQ8RAvdT3zU8QGGh5qUg",
+  apiKey: "AIzaSyBS7zyyoSvQfllyQ8RAvdT3zU0GQGh5qUg",
   authDomain: "ownedscore.firebaseapp.com",
   projectId: "ownedscore",
   storageBucket: "ownedscore.firebasestorage.app",
