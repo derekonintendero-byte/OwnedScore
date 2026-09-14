@@ -1,15 +1,19 @@
 import { auth } from "./firebase.js";
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
-document.getElementById("login-btn").addEventListener("click", async () => {
-  const email = document.getElementById("login-email").value;
-  const pass = document.getElementById("login-pass").value;
+const loginBtn = document.getElementById("login-btn");
+const loginEmail = document.getElementById("login-email");
+const loginPass = document.getElementById("login-pass");
+
+loginBtn.addEventListener("click", async () => {
+  const email = loginEmail.value;
+  const pass = loginPass.value;
 
   try {
     await signInWithEmailAndPassword(auth, email, pass);
-    alert("Sesión iniciada");
     window.location.href = "perfil.html";
-  } catch (e) {
-    alert("Error: " + e.message);
+  } catch (err) {
+    alert("Error al iniciar sesión");
   }
 });
+
