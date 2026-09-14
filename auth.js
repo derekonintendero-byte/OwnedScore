@@ -25,6 +25,15 @@ const loginBtn = document.getElementById("loginBtn");
 const loginEmail = document.getElementById("loginEmail");
 const loginPassword = document.getElementById("loginPassword");
 
+// ⭐ PERFIL — REDIRECCIÓN
+navProfile.onclick = () => {
+  window.location.href = "perfil.html";
+};
+
+mobileProfile.onclick = () => {
+  window.location.href = "perfil.html";
+};
+
 // Abrir login
 navLogin.onclick = () => loginModal.style.display = "flex";
 mobileLogin.onclick = () => loginModal.style.display = "flex";
