@@ -9,12 +9,12 @@
   <!-- 🔒 SEGURIDAD: Content Security Policy -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' https://www.gstatic.com/firebasejs/;
+    script-src 'self' https://www.gstatic.com/firebasejs/ https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;
     style-src 'self' 'unsafe-inline';
     img-src 'self' https: data:;
     font-src 'self' https:;
-    connect-src 'self' https://api.rawg.io https://*.firebaseapp.com https://*.firebaseio.com;
-    frame-src 'none';
+    connect-src 'self' https://api.rawg.io https://*.firebaseapp.com https://*.firebaseio.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;
+    frame-src https://www.google.com/recaptcha/;
     object-src 'none';
     base-uri 'self';
   " />
@@ -24,6 +24,9 @@
   <meta http-equiv="X-Frame-Options" content="DENY" />
   <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+  <!-- 🔒 reCAPTCHA v3 Script -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -309,6 +312,8 @@
       display: flex;
       flex-direction: column;
       gap: 0.8rem;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     .modal-close {
       position: absolute;
@@ -327,13 +332,32 @@
       margin-top: 0.3rem;
     }
 
-    .security-warning {
-      background: #e74c3c;
-      color: #fff;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      margin: 1rem 0;
-      font-weight: 600;
+    .success-message {
+      color: #2ecc71;
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid #4fd1ff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .captcha-note {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 0.5rem;
+      text-align: center;
     }
   </style>
 </head>
@@ -381,7 +405,11 @@
       <input id="loginPassword" type="password" placeholder="Contraseña" class="score-input" autocomplete="current-password" required />
       <div id="loginError" class="error-message" style="display:none;"></div>
 
-      <button id="loginBtn" class="score-btn">Entrar</button>
+      <button id="loginBtn" class="score-btn">
+        <span id="loginBtnText">Entrar</span>
+      </button>
+
+      <div class="captcha-note">🤖 Protegido por reCAPTCHA</div>
 
       <p class="score-note">
         ¿No tienes cuenta?
@@ -400,7 +428,11 @@
       <input id="registerPassword" type="password" placeholder="Contraseña (mín. 6 caracteres)" class="score-input" autocomplete="new-password" minlength="6" required />
       <div id="registerError" class="error-message" style="display:none;"></div>
 
-      <button id="registerBtn" class="score-btn">Registrarme</button>
+      <button id="registerBtn" class="score-btn">
+        <span id="registerBtnText">Registrarme</span>
+      </button>
+
+      <div class="captcha-note">🤖 Protegido por reCAPTCHA</div>
 
       <p class="score-note">
         ¿Ya tienes cuenta?
@@ -583,7 +615,7 @@
     });
   </script>
 
-  <!-- FIREBASE + AUTH -->
+  <!-- FIREBASE + AUTH CON reCAPTCHA v3 -->
   <script type="module">
     'use strict';
 
@@ -606,6 +638,23 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // 🔒 CLAVE DE reCAPTCHA v3 (Reemplaza con tu clave)
+    const RECAPTCHA_SITE_KEY = "6LdXYLkqAAAAAIhB3PYU5VKzR8vQGnJvQG_Qs773"; // ⚠️ Reemplaza con tu clave
+
+    // 🔒 SEGURIDAD: Función para obtener token reCAPTCHA
+    async function getRecaptchaToken(action) {
+      if (typeof grecaptcha === 'undefined') {
+        console.error("reCAPTCHA no está cargado");
+        return null;
+      }
+      try {
+        return await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action });
+      } catch (err) {
+        console.error("Error al obtener reCAPTCHA token:", err);
+        return null;
+      }
+    }
 
     // 🔒 SEGURIDAD: Validación de email
     function isValidEmail(email) {
@@ -634,6 +683,8 @@
 
     const loginBtn = document.getElementById("loginBtn");
     const registerBtn = document.getElementById("registerBtn");
+    const loginBtnText = document.getElementById("loginBtnText");
+    const registerBtnText = document.getElementById("registerBtnText");
 
     const loginEmail = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
@@ -668,7 +719,7 @@
       registerError.style.display = "none";
     };
 
-    // 🔒 SEGURIDAD: LOGIN mejorado
+    // 🔒 SEGURIDAD: LOGIN con reCAPTCHA v3
     loginBtn.onclick = async () => {
       const email = loginEmail.value.trim();
       const password = loginPassword.value.trim();
@@ -697,6 +748,16 @@
 
       try {
         loginBtn.disabled = true;
+        loginBtnText.innerHTML = '<span class="loading-spinner"></span>Verificando...';
+
+        // 🔒 Obtener token reCAPTCHA
+        const recaptchaToken = await getRecaptchaToken("login");
+        if (!recaptchaToken) {
+          throw new Error("No se pudo verificar reCAPTCHA");
+        }
+
+        // Aquí puedes enviar el token a tu backend para verificarlo
+        // Por ahora, procedemos con el login
         await signInWithEmailAndPassword(auth, email, password);
         loginModal.style.display = "none";
         loginEmail.value = "";
@@ -706,15 +767,17 @@
         if (err.code === 'auth/user-not-found') message = "❌ Usuario no encontrado";
         if (err.code === 'auth/wrong-password') message = "❌ Contraseña incorrecta";
         if (err.code === 'auth/too-many-requests') message = "❌ Demasiados intentos. Intenta después";
+        if (err.message === "No se pudo verificar reCAPTCHA") message = "❌ Error de seguridad. Intenta de nuevo";
         
         loginError.textContent = message;
         loginError.style.display = "block";
       } finally {
         loginBtn.disabled = false;
+        loginBtnText.textContent = 'Entrar';
       }
     };
 
-    // 🔒 SEGURIDAD: REGISTRO mejorado
+    // 🔒 SEGURIDAD: REGISTRO con reCAPTCHA v3
     registerBtn.onclick = async () => {
       const email = registerEmail.value.trim();
       const password = registerPassword.value.trim();
@@ -743,6 +806,16 @@
 
       try {
         registerBtn.disabled = true;
+        registerBtnText.innerHTML = '<span class="loading-spinner"></span>Registrando...';
+
+        // 🔒 Obtener token reCAPTCHA
+        const recaptchaToken = await getRecaptchaToken("register");
+        if (!recaptchaToken) {
+          throw new Error("No se pudo verificar reCAPTCHA");
+        }
+
+        // Aquí puedes enviar el token a tu backend para verificarlo
+        // Por ahora, procedemos con el registro
         await createUserWithEmailAndPassword(auth, email, password);
         registerModal.style.display = "none";
         registerEmail.value = "";
@@ -752,11 +825,13 @@
         if (err.code === 'auth/email-already-in-use') message = "❌ Email ya registrado";
         if (err.code === 'auth/weak-password') message = "❌ Contraseña muy débil";
         if (err.code === 'auth/invalid-email') message = "❌ Email inválido";
+        if (err.message === "No se pudo verificar reCAPTCHA") message = "❌ Error de seguridad. Intenta de nuevo";
         
         registerError.textContent = message;
         registerError.style.display = "block";
       } finally {
         registerBtn.disabled = false;
+        registerBtnText.textContent = 'Registrarme';
       }
     };
 
