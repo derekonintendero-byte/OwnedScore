@@ -2,8 +2,28 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>OwnedScore – La verdad del jugador</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- 🔒 SEGURIDAD: Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://www.gstatic.com/firebasejs/;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' https: data:;
+    font-src 'self' https:;
+    connect-src 'self' https://api.rawg.io https://*.firebaseapp.com https://*.firebaseio.com;
+    frame-src 'none';
+    object-src 'none';
+    base-uri 'self';
+  " />
+  
+  <!-- 🔒 SEGURIDAD: Protección XSS y clickjacking -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -172,7 +192,7 @@
       border-radius: 0.8rem;
       border: 1px solid #22263a;
     }
-    .video-wrapper iframe {
+    .video-wrapper video {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
@@ -300,6 +320,21 @@
       font-size: 1.2rem;
       cursor: pointer;
     }
+
+    .error-message {
+      color: #e74c3c;
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+    }
+
+    .security-warning {
+      background: #e74c3c;
+      color: #fff;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -339,11 +374,12 @@
   <!-- Modal de Login -->
   <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
-      <button class="modal-close" id="closeLoginModal">✕</button>
+      <button class="modal-close" id="closeLoginModal" aria-label="Cerrar">✕</button>
       <h2>Iniciar sesión</h2>
 
-      <input id="loginEmail" type="email" placeholder="Correo electrónico" class="score-input" />
-      <input id="loginPassword" type="password" placeholder="Contraseña" class="score-input" />
+      <input id="loginEmail" type="email" placeholder="Correo electrónico" class="score-input" autocomplete="email" required />
+      <input id="loginPassword" type="password" placeholder="Contraseña" class="score-input" autocomplete="current-password" required />
+      <div id="loginError" class="error-message" style="display:none;"></div>
 
       <button id="loginBtn" class="score-btn">Entrar</button>
 
@@ -357,11 +393,12 @@
   <!-- Modal de Registro -->
   <div class="modal-overlay" id="registerModal">
     <div class="modal-box">
-      <button class="modal-close" id="closeRegisterModal">✕</button>
+      <button class="modal-close" id="closeRegisterModal" aria-label="Cerrar">✕</button>
       <h2>Crear cuenta</h2>
 
-      <input id="registerEmail" type="email" placeholder="Correo electrónico" class="score-input" />
-      <input id="registerPassword" type="password" placeholder="Contraseña" class="score-input" />
+      <input id="registerEmail" type="email" placeholder="Correo electrónico" class="score-input" autocomplete="email" required />
+      <input id="registerPassword" type="password" placeholder="Contraseña (mín. 6 caracteres)" class="score-input" autocomplete="new-password" minlength="6" required />
+      <div id="registerError" class="error-message" style="display:none;"></div>
 
       <button id="registerBtn" class="score-btn">Registrarme</button>
 
@@ -381,7 +418,7 @@
 
     <!-- Buscador -->
     <div class="search-bar">
-      <input id="searchInput" type="text" placeholder="Buscar juego..." />
+      <input id="searchInput" type="text" placeholder="Buscar juego..." maxlength="100" />
       <button id="searchBtn">Buscar</button>
     </div>
   </section>
@@ -394,39 +431,70 @@
 
   <!-- SCRIPT DE BÚSQUEDA RAWG -->
   <script>
+    'use strict';
+
     const resultsContainer = document.getElementById("resultsContainer");
     const searchBtn = document.getElementById("searchBtn");
     const searchInput = document.getElementById("searchInput");
 
-    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7"; // ✅ API KEY CONFIGURADA
+    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
+    const MAX_SEARCH_LENGTH = 100;
+    const REQUEST_TIMEOUT = 10000;
+
+    // 🔒 SEGURIDAD: Sanitización de HTML
+    function sanitizeHTML(str) {
+      if (typeof str !== 'string') return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // 🔒 SEGURIDAD: Validación de URL
+    function isValidImageUrl(url) {
+      try {
+        const urlObj = new URL(url);
+        return ['https:', 'http:'].includes(urlObj.protocol);
+      } catch (e) {
+        return false;
+      }
+    }
 
     async function searchGame(query) {
+      if (!query || query.length > MAX_SEARCH_LENGTH) {
+        resultsContainer.innerHTML = `<div class="no-result">⚠️ Búsqueda inválida</div>`;
+        return;
+      }
+
       resultsContainer.innerHTML = `
-        <div class="no-result">🔍 Buscando <strong>${query}</strong>...</div>
+        <div class="no-result">🔍 Buscando <strong>${sanitizeHTML(query)}</strong>...</div>
       `;
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
       try {
-        // Usar CORS proxy para evitar problemas de CORS
-        const corsProxy = "https://cors-anywhere.herokuapp.com/";
         const url = `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${RAWG_KEY}`;
         
         const res = await fetch(url, {
           method: "GET",
           headers: {
             "Accept": "application/json"
-          }
+          },
+          signal: controller.signal,
+          mode: 'cors'
         });
+
+        clearTimeout(timeoutId);
 
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
 
         const data = await res.json();
-        console.log("Respuesta de RAWG:", data);
 
         if (!data.results || data.results.length === 0) {
           resultsContainer.innerHTML = `
-            <div class="no-result">❌ No se encontró ningún juego con el nombre "<strong>${query}</strong>".</div>
+            <div class="no-result">❌ No se encontró ningún juego con el nombre "<strong>${sanitizeHTML(query)}</strong>".</div>
           `;
           return;
         }
@@ -434,33 +502,32 @@
         const game = data.results[0];
         renderGame(game);
       } catch (err) {
-        console.error("Error completo:", err);
+        clearTimeout(timeoutId);
+        console.error("Error:", err.message);
         resultsContainer.innerHTML = `
           <div class="no-result">
-            ⚠️ Error al buscar: ${err.message}<br>
-            <small>Intenta de nuevo o verifica tu conexión.</small>
+            ⚠️ Error al buscar. Intenta de nuevo.
           </div>
         `;
       }
     }
 
     function renderGame(game) {
-      const img = game.background_image || "";
-      const name = game.name || "Sin nombre";
-      const released = game.released || "Fecha desconocida";
-      const rating = game.rating || 0;
+      const img = game.background_image && isValidImageUrl(game.background_image) ? game.background_image : "";
+      const name = sanitizeHTML(game.name || "Sin nombre");
+      const released = sanitizeHTML(game.released || "Fecha desconocida");
+      const rating = Number(game.rating) || 0;
       const platforms = game.platforms
-        ? game.platforms.map(p => p.platform.name).join(", ")
+        ? game.platforms.map(p => sanitizeHTML(p.platform.name)).join(", ")
         : "Desconocidas";
 
-      const videoUrl = game.clip ? game.clip.clip : null;
+      const videoUrl = game.clip?.clip;
+      const isValidVideo = videoUrl && typeof videoUrl === 'string' && isValidImageUrl(videoUrl);
 
       resultsContainer.innerHTML = `
         <div class="game-result">
-
           <div>
-            ${img ? `<img src="${img}" class="game-img" alt="${name}" />` : ""}
-
+            ${img ? `<img src="${img}" class="game-img" alt="${name}" loading="lazy" />` : ""}
             <h3>${name}</h3>
             <p><strong>📅 Fecha:</strong> ${released}</p>
             <p><strong>🎮 Plataformas:</strong> ${platforms}</p>
@@ -469,10 +536,10 @@
 
           <div>
             ${
-              videoUrl
+              isValidVideo
                 ? `
               <div class="video-wrapper">
-                <video controls style="width:100%; height:100%; position:absolute; top:0; left:0;">
+                <video controls>
                   <source src="${videoUrl}" type="video/mp4">
                   Tu navegador no soporta video.
                 </video>
@@ -481,7 +548,6 @@
                 : `<div class="no-result">🎬 Este juego no tiene trailer disponible.</div>`
             }
 
-            <!-- Scorebox se renderiza aquí -->
             <div class="score-box-wrapper">
               <div class="score-box">
                 <div class="score-title">OwnedScore</div>
@@ -495,17 +561,15 @@
                 <div class="score-note">Tu voto se guarda en Firebase</div>
               </div>
             </div>
-
           </div>
-
         </div>
       `;
     }
 
     searchBtn.addEventListener("click", () => {
       const q = searchInput.value.trim();
-      if (q.length === 0) {
-        alert("Escribe el nombre de un juego");
+      if (!q) {
+        resultsContainer.innerHTML = `<div class="no-result">⚠️ Escribe el nombre de un juego</div>`;
         return;
       }
       searchGame(q);
@@ -514,21 +578,22 @@
     searchInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         const q = searchInput.value.trim();
-        if (q.length === 0) return;
-        searchGame(q);
+        if (q) searchGame(q);
       }
     });
   </script>
 
   <!-- FIREBASE + AUTH -->
   <script type="module">
+    'use strict';
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // ✅ Configuración de Firebase actualizada
+    // ✅ Configuración de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBS7zyyoSvQfllyQ8RAvdT3zU0GQGh5qUg",
       authDomain: "ownedscore.firebaseapp.com",
@@ -541,6 +606,17 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // 🔒 SEGURIDAD: Validación de email
+    function isValidEmail(email) {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email) && email.length <= 254;
+    }
+
+    // 🔒 SEGURIDAD: Validación de contraseña
+    function isValidPassword(password) {
+      return password.length >= 6 && password.length <= 1000;
+    }
 
     // ELEMENTOS DEL DOM
     const navLogin = document.getElementById("navLogin");
@@ -561,71 +637,136 @@
 
     const loginEmail = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
+    const loginError = document.getElementById("loginError");
 
     const registerEmail = document.getElementById("registerEmail");
     const registerPassword = document.getElementById("registerPassword");
+    const registerError = document.getElementById("registerError");
 
     // CONTROL DE MODALES
     navLogin.onclick = () => loginModal.style.display = "flex";
-    closeLoginModal.onclick = () => loginModal.style.display = "none";
-    closeRegisterModal.onclick = () => registerModal.style.display = "none";
+    closeLoginModal.onclick = () => {
+      loginModal.style.display = "none";
+      loginError.style.display = "none";
+      loginError.textContent = "";
+    };
+    closeRegisterModal.onclick = () => {
+      registerModal.style.display = "none";
+      registerError.style.display = "none";
+      registerError.textContent = "";
+    };
 
     openRegisterFromLogin.onclick = () => {
       loginModal.style.display = "none";
       registerModal.style.display = "flex";
+      loginError.style.display = "none";
     };
 
     openLoginFromRegister.onclick = () => {
       registerModal.style.display = "none";
       loginModal.style.display = "flex";
+      registerError.style.display = "none";
     };
 
-    // LOGIN
+    // 🔒 SEGURIDAD: LOGIN mejorado
     loginBtn.onclick = async () => {
       const email = loginEmail.value.trim();
       const password = loginPassword.value.trim();
 
+      loginError.style.display = "none";
+      loginError.textContent = "";
+
+      // Validaciones
       if (!email || !password) {
-        alert("Completa todos los campos");
+        loginError.textContent = "⚠️ Completa todos los campos";
+        loginError.style.display = "block";
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        loginError.textContent = "⚠️ Email inválido";
+        loginError.style.display = "block";
+        return;
+      }
+
+      if (!isValidPassword(password)) {
+        loginError.textContent = "⚠️ Contraseña inválida";
+        loginError.style.display = "block";
         return;
       }
 
       try {
+        loginBtn.disabled = true;
         await signInWithEmailAndPassword(auth, email, password);
         loginModal.style.display = "none";
         loginEmail.value = "";
         loginPassword.value = "";
-        alert("¡Bienvenido!");
       } catch (err) {
-        alert("Error: " + err.message);
+        let message = "❌ Error de autenticación";
+        if (err.code === 'auth/user-not-found') message = "❌ Usuario no encontrado";
+        if (err.code === 'auth/wrong-password') message = "❌ Contraseña incorrecta";
+        if (err.code === 'auth/too-many-requests') message = "❌ Demasiados intentos. Intenta después";
+        
+        loginError.textContent = message;
+        loginError.style.display = "block";
+      } finally {
+        loginBtn.disabled = false;
       }
     };
 
-    // REGISTRO
+    // 🔒 SEGURIDAD: REGISTRO mejorado
     registerBtn.onclick = async () => {
       const email = registerEmail.value.trim();
       const password = registerPassword.value.trim();
 
+      registerError.style.display = "none";
+      registerError.textContent = "";
+
+      // Validaciones
       if (!email || !password) {
-        alert("Completa todos los campos");
+        registerError.textContent = "⚠️ Completa todos los campos";
+        registerError.style.display = "block";
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        registerError.textContent = "⚠️ Email inválido";
+        registerError.style.display = "block";
+        return;
+      }
+
+      if (!isValidPassword(password)) {
+        registerError.textContent = "⚠️ Contraseña debe tener 6+ caracteres";
+        registerError.style.display = "block";
         return;
       }
 
       try {
+        registerBtn.disabled = true;
         await createUserWithEmailAndPassword(auth, email, password);
         registerModal.style.display = "none";
         registerEmail.value = "";
         registerPassword.value = "";
-        alert("¡Cuenta creada exitosamente!");
       } catch (err) {
-        alert("Error: " + err.message);
+        let message = "❌ Error al crear cuenta";
+        if (err.code === 'auth/email-already-in-use') message = "❌ Email ya registrado";
+        if (err.code === 'auth/weak-password') message = "❌ Contraseña muy débil";
+        if (err.code === 'auth/invalid-email') message = "❌ Email inválido";
+        
+        registerError.textContent = message;
+        registerError.style.display = "block";
+      } finally {
+        registerBtn.disabled = false;
       }
     };
 
     // LOGOUT
     navLogout.onclick = async () => {
-      await signOut(auth);
-      alert("Sesión cerrada");
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.error("Error al cerrar sesión:", err);
+      }
     };
 
     // ESTADO DE AUTENTICACIÓN
@@ -644,10 +785,18 @@
 
   <!-- SISTEMA DE PUNTUACIÓN -->
   <script type="module">
+    'use strict';
+
     import { getFirestore, doc, setDoc, getDoc } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const db = getFirestore();
+
+    // 🔒 SEGURIDAD: Sanitización
+    function sanitizeString(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/[<>]/g, '');
+    }
 
     function updateScoreColor(score) {
       const scoreNumber = document.getElementById("scoreNumber");
@@ -662,7 +811,8 @@
 
     async function loadScore(gameName) {
       try {
-        const ref = doc(db, "scores", gameName);
+        const safeName = sanitizeString(gameName).substring(0, 255);
+        const ref = doc(db, "scores", safeName);
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
@@ -675,12 +825,16 @@
         }
 
         const data = snap.data();
-        const avg = Math.round(data.total / data.votes);
+        const votes = Number(data.votes) || 0;
+        const total = Number(data.total) || 0;
+        
+        if (votes === 0) return;
+        const avg = Math.round(total / votes);
 
         const scoreNum = document.getElementById("scoreNumber");
         const scoreVotes = document.getElementById("scoreVotes");
-        if (scoreNum) scoreNum.innerText = avg;
-        if (scoreVotes) scoreVotes.innerText = `${data.votes} votos`;
+        if (scoreNum) scoreNum.innerText = Math.max(0, Math.min(100, avg));
+        if (scoreVotes) scoreVotes.innerText = `${votes} votos`;
 
         updateScoreColor(avg);
       } catch (err) {
@@ -690,27 +844,37 @@
 
     async function saveScore(gameName, value) {
       try {
-        const ref = doc(db, "scores", gameName);
+        const score = Number(value);
+        if (isNaN(score) || score < 0 || score > 100) {
+          alert("❌ Puntuación debe estar entre 0 y 100");
+          return;
+        }
+
+        const safeName = sanitizeString(gameName).substring(0, 255);
+        const ref = doc(db, "scores", safeName);
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
           await setDoc(ref, {
-            total: value,
+            total: score,
             votes: 1
           });
         } else {
           const data = snap.data();
+          const newTotal = Number(data.total) || 0;
+          const newVotes = Number(data.votes) || 0;
+          
           await setDoc(ref, {
-            total: data.total + value,
-            votes: data.votes + 1
+            total: newTotal + score,
+            votes: newVotes + 1
           });
         }
 
         loadScore(gameName);
-        alert("¡Puntuación guardada!");
+        alert("✅ Puntuación guardada");
       } catch (err) {
         console.error("Error al guardar puntuación:", err);
-        alert("Error al guardar tu voto: " + err.message);
+        alert("❌ Error al guardar tu voto");
       }
     }
 
@@ -728,13 +892,11 @@
       loadScore(gameName);
 
       scoreBtn.onclick = () => {
-        const value = parseInt(scoreInput.value);
-
-        if (isNaN(value) || value < 0 || value > 100) {
-          alert("La puntuación debe ser entre 0 y 100");
+        const value = scoreInput.value.trim();
+        if (!value) {
+          alert("⚠️ Ingresa una puntuación");
           return;
         }
-
         saveScore(gameName, value);
         scoreInput.value = "";
       };
