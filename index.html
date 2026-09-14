@@ -402,18 +402,31 @@
 
     async function searchGame(query) {
       resultsContainer.innerHTML = `
-        <div class="no-result">Buscando <strong>${query}</strong>...</div>
+        <div class="no-result">🔍 Buscando <strong>${query}</strong>...</div>
       `;
 
       try {
-        const res = await fetch(
-          `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${RAWG_KEY}`
-        );
+        // Usar CORS proxy para evitar problemas de CORS
+        const corsProxy = "https://cors-anywhere.herokuapp.com/";
+        const url = `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${RAWG_KEY}`;
+        
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
         const data = await res.json();
+        console.log("Respuesta de RAWG:", data);
 
         if (!data.results || data.results.length === 0) {
           resultsContainer.innerHTML = `
-            <div class="no-result">No se encontró ningún juego con ese nombre.</div>
+            <div class="no-result">❌ No se encontró ningún juego con el nombre "<strong>${query}</strong>".</div>
           `;
           return;
         }
@@ -421,9 +434,12 @@
         const game = data.results[0];
         renderGame(game);
       } catch (err) {
-        console.error("Error:", err);
+        console.error("Error completo:", err);
         resultsContainer.innerHTML = `
-          <div class="no-result">Error al buscar el juego.</div>
+          <div class="no-result">
+            ⚠️ Error al buscar: ${err.message}<br>
+            <small>Intenta de nuevo o verifica tu conexión.</small>
+          </div>
         `;
       }
     }
@@ -446,9 +462,9 @@
             ${img ? `<img src="${img}" class="game-img" alt="${name}" />` : ""}
 
             <h3>${name}</h3>
-            <p><strong>Fecha:</strong> ${released}</p>
-            <p><strong>Plataformas:</strong> ${platforms}</p>
-            <p><strong>Rating RAWG:</strong> ${rating}</p>
+            <p><strong>📅 Fecha:</strong> ${released}</p>
+            <p><strong>🎮 Plataformas:</strong> ${platforms}</p>
+            <p><strong>⭐ Rating RAWG:</strong> ${rating}/5</p>
           </div>
 
           <div>
@@ -462,7 +478,7 @@
                 </video>
               </div>
             `
-                : `<div class="no-result">Este juego no tiene trailer disponible.</div>`
+                : `<div class="no-result">🎬 Este juego no tiene trailer disponible.</div>`
             }
 
             <!-- Scorebox se renderiza aquí -->
@@ -488,7 +504,10 @@
 
     searchBtn.addEventListener("click", () => {
       const q = searchInput.value.trim();
-      if (q.length === 0) return;
+      if (q.length === 0) {
+        alert("Escribe el nombre de un juego");
+        return;
+      }
       searchGame(q);
     });
 
@@ -576,6 +595,7 @@
         loginModal.style.display = "none";
         loginEmail.value = "";
         loginPassword.value = "";
+        alert("¡Bienvenido!");
       } catch (err) {
         alert("Error: " + err.message);
       }
@@ -596,6 +616,7 @@
         registerModal.style.display = "none";
         registerEmail.value = "";
         registerPassword.value = "";
+        alert("¡Cuenta creada exitosamente!");
       } catch (err) {
         alert("Error: " + err.message);
       }
@@ -604,6 +625,7 @@
     // LOGOUT
     navLogout.onclick = async () => {
       await signOut(auth);
+      alert("Sesión cerrada");
     };
 
     // ESTADO DE AUTENTICACIÓN
@@ -639,47 +661,57 @@
     }
 
     async function loadScore(gameName) {
-      const ref = doc(db, "scores", gameName);
-      const snap = await getDoc(ref);
+      try {
+        const ref = doc(db, "scores", gameName);
+        const snap = await getDoc(ref);
 
-      if (!snap.exists()) {
+        if (!snap.exists()) {
+          const scoreNum = document.getElementById("scoreNumber");
+          const scoreVotes = document.getElementById("scoreVotes");
+          if (scoreNum) scoreNum.innerText = "0";
+          if (scoreVotes) scoreVotes.innerText = "0 votos";
+          updateScoreColor(0);
+          return;
+        }
+
+        const data = snap.data();
+        const avg = Math.round(data.total / data.votes);
+
         const scoreNum = document.getElementById("scoreNumber");
         const scoreVotes = document.getElementById("scoreVotes");
-        if (scoreNum) scoreNum.innerText = "0";
-        if (scoreVotes) scoreVotes.innerText = "0 votos";
-        updateScoreColor(0);
-        return;
+        if (scoreNum) scoreNum.innerText = avg;
+        if (scoreVotes) scoreVotes.innerText = `${data.votes} votos`;
+
+        updateScoreColor(avg);
+      } catch (err) {
+        console.error("Error al cargar puntuación:", err);
       }
-
-      const data = snap.data();
-      const avg = Math.round(data.total / data.votes);
-
-      const scoreNum = document.getElementById("scoreNumber");
-      const scoreVotes = document.getElementById("scoreVotes");
-      if (scoreNum) scoreNum.innerText = avg;
-      if (scoreVotes) scoreVotes.innerText = `${data.votes} votos`;
-
-      updateScoreColor(avg);
     }
 
     async function saveScore(gameName, value) {
-      const ref = doc(db, "scores", gameName);
-      const snap = await getDoc(ref);
+      try {
+        const ref = doc(db, "scores", gameName);
+        const snap = await getDoc(ref);
 
-      if (!snap.exists()) {
-        await setDoc(ref, {
-          total: value,
-          votes: 1
-        });
-      } else {
-        const data = snap.data();
-        await setDoc(ref, {
-          total: data.total + value,
-          votes: data.votes + 1
-        });
+        if (!snap.exists()) {
+          await setDoc(ref, {
+            total: value,
+            votes: 1
+          });
+        } else {
+          const data = snap.data();
+          await setDoc(ref, {
+            total: data.total + value,
+            votes: data.votes + 1
+          });
+        }
+
+        loadScore(gameName);
+        alert("¡Puntuación guardada!");
+      } catch (err) {
+        console.error("Error al guardar puntuación:", err);
+        alert("Error al guardar tu voto: " + err.message);
       }
-
-      loadScore(gameName);
     }
 
     const observer = new MutationObserver(() => {
