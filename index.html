@@ -15,6 +15,7 @@
       overflow-x: hidden;
     }
 
+    /* HEADER */
     .header {
       max-width: 1200px;
       margin: 0 auto;
@@ -25,6 +26,7 @@
       border-bottom: 1px solid #222;
     }
 
+    /* HAMBURGER */
     .hamburger {
       display: none;
       flex-direction: column;
@@ -38,12 +40,14 @@
       border-radius: 3px;
     }
 
+    /* LOGO */
     .logo {
       text-align: right;
     }
     .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
     .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
 
+    /* NAV DESKTOP */
     .nav {
       display: flex;
       gap: 1rem;
@@ -68,6 +72,7 @@
       .hamburger { display: flex; }
     }
 
+    /* MOBILE MENU */
     .mobile-overlay {
       position: fixed;
       inset: 0;
@@ -105,6 +110,7 @@
       color: #fff;
     }
 
+    /* HERO */
     .hero {
       max-width: 1200px;
       margin: 0 auto;
@@ -137,6 +143,7 @@
       cursor: pointer;
     }
 
+    /* RESULTS */
     .section { max-width: 1200px; margin: 2rem auto 0; padding: 0 1.5rem; }
     .section h2 { font-size: 1.4rem; margin-bottom: 1rem; }
 
@@ -186,6 +193,68 @@
       color: #ccc;
     }
 
+    /* METACRITIC BOX */
+    .score-box {
+      margin-top: 1rem;
+      background: #11131b;
+      padding: 1rem;
+      border-radius: 0.8rem;
+      border: 1px solid #22263a;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+    }
+
+    .score-number {
+      font-size: 3rem;
+      font-weight: 700;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .score-green { background: #2ecc71; color: #000; }
+    .score-yellow { background: #f1c40f; color: #000; }
+    .score-red { background: #e74c3c; color: #fff; }
+
+    .score-votes {
+      font-size: 0.9rem;
+      color: #bbb;
+    }
+
+    .score-your {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .score-input {
+      margin-top: 0.5rem;
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      border: none;
+      background: #0b0d13;
+      color: #fff;
+      text-align: center;
+    }
+
+    .score-btn {
+      margin-top: 0.5rem;
+      padding: 0.7rem;
+      width: 100%;
+      border: none;
+      border-radius: 0.5rem;
+      background: #4fd1ff;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .score-btn:hover {
+      background: #6fe1ff;
+    }
+
+    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -222,6 +291,7 @@
 
 <body>
 
+  <!-- HEADER -->
   <header class="header">
     <div class="hamburger" id="hamburger">
       <div></div>
@@ -245,8 +315,10 @@
     </nav>
   </header>
 
+  <!-- MOBILE OVERLAY -->
   <div class="mobile-overlay" id="mobileOverlay"></div>
 
+  <!-- MOBILE MENU -->
   <div class="mobile-menu" id="mobileMenu">
     <div class="mobile-link" id="mHome">Inicio</div>
     <div class="mobile-link" id="mGames">Juegos</div>
@@ -257,6 +329,7 @@
     <div class="mobile-link" id="mLogout" style="display:none;">Cerrar sesión</div>
   </div>
 
+  <!-- MODAL LOGIN -->
   <div id="loginModal" class="modal-overlay">
     <div class="modal-box">
       <button class="modal-close" id="closeModal">✕</button>
@@ -273,6 +346,7 @@
     </div>
   </div>
 
+  <!-- HERO -->
   <section class="hero">
     <div class="hero-text">
       <h1>Puntuaciones reales de jugadores verificados</h1>
@@ -290,6 +364,7 @@
     </form>
   </section>
 
+  <!-- RESULTADOS -->
   <main class="main">
     <section class="section">
       <h2>Resultado de búsqueda</h2>
@@ -297,7 +372,16 @@
     </section>
   </main>
 
-  <script>
+  <!-- RAWG + OWNEDSCORE RATING -->
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+    import {
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
     const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
 
     const form = document.getElementById("searchForm");
@@ -316,6 +400,51 @@
       }
 
       return [...new Set(filtradas)];
+    }
+
+    function colorScore(score) {
+      if (score >= 75) return "score-green";
+      if (score >= 50) return "score-yellow";
+      return "score-red";
+    }
+
+    async function cargarOwnedScore(gameId) {
+      const ref = doc(db, "ratings", String(gameId));
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        return { promedio: null, votos: 0, userScore: null };
+      }
+
+      const data = snap.data();
+      const valores = Object.values(data);
+      const promedio = Math.round(valores.reduce((a,b)=>a+b,0) / valores.length);
+
+      let userScore = null;
+      const user = auth.currentUser;
+      if (user && data[user.uid]) {
+        userScore = data[user.uid];
+      }
+
+      return {
+        promedio,
+        votos: valores.length,
+        userScore
+      };
+    }
+
+    async function guardarPuntuacion(gameId, score) {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const ref = doc(db, "ratings", String(gameId));
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        await setDoc(ref, { [user.uid]: score });
+      } else {
+        await updateDoc(ref, { [user.uid]: score });
+      }
     }
 
     form.addEventListener("submit", async (e) => {
@@ -339,12 +468,17 @@
         }
 
         const game = data.results[0];
+        const gameId = game.id;
 
-        const trailerRes = await fetch(`https://api.rawg.io/api/games/${game.id}/movies?key=${RAWG_KEY}`);
+        const trailerRes = await fetch(`https://api.rawg.io/api/games/${gameId}/movies?key=${RAWG_KEY}`);
         const trailerData = await trailerRes.json();
         const trailer = trailerData.results?.[0]?.data?.max;
 
         const plataformasFiltradas = filtrarPlataformas(game);
+
+        const owned = await cargarOwnedScore(gameId);
+
+        const scoreColor = owned.promedio ? colorScore(owned.promedio) : "score-yellow";
 
         result.innerHTML = `
           <div class="game-result">
@@ -355,138 +489,13 @@
               <p><strong>Plataformas:</strong> ${plataformasFiltradas.length ? plataformasFiltradas.join(", ") : "Sin datos fiables"}</p>
               <p><strong>Lanzamiento:</strong> ${game.released || "Sin fecha"}</p>
               <p><strong>Puntuación RAWG:</strong> ${game.rating || "Sin puntuación"}</p>
-              <p style="margin-top:0.5rem; font-size:0.85rem; color:#888;">
-                Algunas plataformas se filtran automáticamente para evitar datos incorrectos.
-              </p>
-            </div>
 
-            <div class="video-wrapper">
-              ${
-                trailer
-                  ? `<iframe src="${trailer}" allowfullscreen></iframe>`
-                  : `<div class="no-result">Sin trailer disponible.</div>`
-              }
-            </div>
-          </div>
-        `;
-      } catch (err) {
-        result.innerHTML = `<div class="no-result">Error al consultar RAWG. Intenta de nuevo.</div>`;
-      }
-    });
-  </script>
+              <div class="score-box">
+                <div class="score-number ${scoreColor}">
+                  ${owned.promedio ? owned.promedio : "--"}
+                </div>
+                <div class="score-votes">
+                  ${owned.votos} votos de jugadores reales
+                </div>
 
-  <script type="module" src="firebase.js"></script>
-  <script type="module" src="auth.js"></script>
-  <script type="module" src="register.js"></script>
-
-  <script>
-    const loginBtnNav = document.getElementById('loginBtnNav');
-    const loginModal = document.getElementById('loginModal');
-    const closeModal = document.getElementById('closeModal');
-
-    loginBtnNav.addEventListener('click', () => {
-      loginModal.style.display = 'flex';
-    });
-
-    closeModal.addEventListener('click', () => {
-      loginModal.style.display = 'none';
-    });
-
-    loginModal.addEventListener('click', (e) => {
-      if (e.target === loginModal) {
-        loginModal.style.display = 'none';
-      }
-    });
-  </script>
-
-  <script>
-    const hamburger = document.getElementById("hamburger");
-    const mobileMenu = document.getElementById("mobileMenu");
-    const mobileOverlay = document.getElementById("mobileOverlay");
-
-    function cerrarMenuMovil() {
-      mobileMenu.style.left = "-260px";
-      mobileOverlay.style.display = "none";
-    }
-
-    hamburger.addEventListener("click", () => {
-      mobileMenu.style.left = "0px";
-      mobileOverlay.style.display = "block";
-    });
-
-    mobileOverlay.addEventListener("click", cerrarMenuMovil);
-  </script>
-
-  <script type="module">
-    import { auth } from "./firebase.js";
-    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-
-    const loginBtnNav = document.getElementById("loginBtnNav");
-    const profileLink = document.getElementById("profileLink");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    const mLogin = document.getElementById("mLogin");
-    const mProfile = document.getElementById("mProfile");
-    const mLogout = document.getElementById("mLogout");
-
-    const goHome = document.getElementById("goHome");
-    const goGames = document.getElementById("goGames");
-    const goRanking = document.getElementById("goRanking");
-
-    const mHome = document.getElementById("mHome");
-    const mGames = document.getElementById("mGames");
-    const mRanking = document.getElementById("mRanking");
-
-    function navTo(url) {
-      window.location.href = url;
-    }
-
-    goHome.onclick = () => navTo("index.html");
-    goGames.onclick = () => navTo("juegos.html");
-    goRanking.onclick = () => navTo("ranking.html");
-
-    mHome.onclick = () => { cerrarMenuMovil(); navTo("index.html"); };
-    mGames.onclick = () => { cerrarMenuMovil(); navTo("juegos.html"); };
-    mRanking.onclick = () => { cerrarMenuMovil(); navTo("ranking.html"); };
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        loginBtnNav.style.display = "none";
-        profileLink.style.display = "inline-block";
-        logoutBtn.style.display = "inline-block";
-
-        mLogin.style.display = "none";
-        mProfile.style.display = "block";
-        mLogout.style.display = "block";
-
-        profileLink.onclick = () => navTo("perfil.html");
-        mProfile.onclick = () => { cerrarMenuMovil(); navTo("perfil.html"); };
-
-        logoutBtn.onclick = async () => {
-          await signOut(auth);
-          navTo("index.html");
-        };
-
-        mLogout.onclick = async () => {
-          cerrarMenuMovil();
-          await signOut(auth);
-          navTo("index.html");
-        };
-
-      } else {
-        loginBtnNav.style.display = "inline-block";
-        profileLink.style.display = "none";
-        logoutBtn.style.display = "none";
-
-        mLogin.style.display = "block";
-        mProfile.style.display = "none";
-        mLogout.style.display = "none";
-
-        mLogin.onclick = () => {
-          cerrarMenuMovil();
-          loginModal.style.display = "flex";
-        };
-      }
-    });
-  </
-    
+                <div class="score-your
