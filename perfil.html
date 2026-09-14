@@ -2,133 +2,92 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <title>Perfil – OwnedScore</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mi Perfil – OwnedScore</title>
 
   <style>
     body {
-      font-family: system-ui, sans-serif;
       background: #05060a;
-      color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
+      color: #fff;
+      font-family: system-ui, sans-serif;
       padding: 2rem;
     }
 
-    h1 {
-      font-size: 2rem;
+    .box {
+      max-width: 500px;
+      margin: auto;
+      background: #0b0d13;
+      padding: 2rem;
+      border-radius: 1rem;
+      border: 1px solid #222;
+    }
+
+    .title {
+      font-size: 1.5rem;
       margin-bottom: 1rem;
       color: #4fd1ff;
     }
 
-    .nav-btn {
-      background: #4fd1ff;
-      color: #05060a;
-      padding: 0.7rem 1.2rem;
-      border: none;
-      border-radius: 999px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-bottom: 1.5rem;
-    }
-
-    .profile-box {
-      background: #0b0d13;
-      padding: 1.5rem;
-      border-radius: 1rem;
-      border: 1px solid #1b1f2b;
-      margin-bottom: 2rem;
-    }
-
-    .profile-item {
-      margin-bottom: 0.8rem;
-    }
-
-    .reviews-box {
-      background: #0b0d13;
-      padding: 1.5rem;
-      border-radius: 1rem;
-      border: 1px solid #1b1f2b;
-    }
-
-    .review-card {
-      background: #11131b;
-      padding: 1rem;
-      border-radius: 0.8rem;
-      border: 1px solid #22263a;
+    .item {
       margin-bottom: 1rem;
+      font-size: 1rem;
     }
 
     .logout-btn {
-      background: #ff4f4f;
-      color: #05060a;
-      padding: 0.7rem 1.2rem;
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.8rem;
+      background: #4fd1ff;
       border: none;
-      border-radius: 999px;
+      border-radius: 0.5rem;
+      color: #000;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 1rem;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Mi Perfil</h1>
 
-    <!-- Botón para volver al inicio -->
-    <button class="nav-btn" id="backBtn">Volver al inicio</button>
+  <div class="box">
+    <div class="title">Tu Perfil</div>
 
-    <div class="profile-box">
-      <h2>Información del usuario</h2>
-      <div class="profile-item"><strong>Email:</strong> <span id="userEmail"></span></div>
-      <div class="profile-item"><strong>ID de usuario:</strong> <span id="userId"></span></div>
+    <div class="item"><strong>Email:</strong> <span id="userEmail"></span></div>
+    <div class="item"><strong>UID:</strong> <span id="userUID"></span></div>
 
-      <button class="logout-btn" id="logoutBtn">Cerrar sesión</button>
-    </div>
-
-    <div class="reviews-box">
-      <h2>Mis reseñas</h2>
-      <div id="reviewsContainer">
-        <p>No has escrito reseñas todavía.</p>
-      </div>
-    </div>
+    <button class="logout-btn" id="logoutBtn">Cerrar sesión</button>
   </div>
 
+  <!-- FIREBASE -->
+  <script type="module" src="firebase.js"></script>
+
+  <!-- PERFIL JS -->
   <script type="module">
-    import { auth } from "./firebase.js";
-    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { app } from "./firebase.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
-    const userEmail = document.getElementById("userEmail");
-    const userId = document.getElementById("userId");
+    const auth = getAuth(app);
+
+    const emailEl = document.getElementById("userEmail");
+    const uidEl = document.getElementById("userUID");
     const logoutBtn = document.getElementById("logoutBtn");
-    const backBtn = document.getElementById("backBtn");
 
-    // Proteger la página: si no hay sesión → volver al inicio
     onAuthStateChanged(auth, (user) => {
-      if (user) {
-        userEmail.textContent = user.email;
-        userId.textContent = user.uid;
-      } else {
+      if (!user) {
         window.location.href = "index.html";
+        return;
       }
+
+      emailEl.textContent = user.email;
+      uidEl.textContent = user.uid;
     });
 
-    // Cerrar sesión
-    logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.href = "index.html";
-    });
-
-    // Volver al inicio
-    backBtn.addEventListener("click", () => {
-      window.location.href = "index.html";
-    });
+    logoutBtn.onclick = () => signOut(auth);
   </script>
+
 </body>
 </html>
