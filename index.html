@@ -26,7 +26,7 @@
       border-bottom: 1px solid #222;
     }
 
-    /* HAMBURGER LEFT */
+    /* HAMBURGUESA IZQUIERDA */
     .hamburger {
       display: none;
       flex-direction: column;
@@ -40,7 +40,7 @@
       border-radius: 3px;
     }
 
-    /* LOGO RIGHT */
+    /* LOGO DERECHA */
     .logo {
       text-align: right;
     }
@@ -73,7 +73,7 @@
       .hamburger { display: flex; }
     }
 
-    /* MOBILE MENU (Lichess style) */
+    /* MOBILE MENU */
     .mobile-overlay {
       position: fixed;
       inset: 0;
@@ -162,6 +162,12 @@
       .game-result {
         grid-template-columns: 1fr;
       }
+    }
+
+    .game-img {
+      width: 100%;
+      border-radius: 0.8rem;
+      margin-bottom: 1rem;
     }
 
     .video-wrapper {
@@ -311,41 +317,52 @@
     </section>
   </main>
 
-  <!-- BUSCADOR LOCAL -->
+  <!-- RAWG BUSCADOR -->
   <script>
-    let games = [];
-
-    fetch("https://ownedscore.netlify.app/games.json")
-      .then(res => res.json())
-      .then(data => games = data);
+    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
 
     const form = document.getElementById("searchForm");
     const input = document.getElementById("searchInput");
     const result = document.getElementById("resultContainer");
 
-    form.addEventListener("submit", e => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const q = input.value.trim().toLowerCase();
+      const q = input.value.trim();
 
-      const game = games.find(g => g.name.toLowerCase() === q);
+      result.innerHTML = `<div class="no-result">Buscando <strong>${q}</strong>...</div>`;
 
-      if (!game) {
+      const res = await fetch(`https://api.rawg.io/api/games?search=${q}&key=${RAWG_KEY}`);
+      const data = await res.json();
+
+      if (!data.results || data.results.length === 0) {
         result.innerHTML = `<div class="no-result">No se encontró <strong>${q}</strong>.</div>`;
         return;
       }
 
+      const game = data.results[0];
+
+      const trailerRes = await fetch(`https://api.rawg.io/api/games/${game.id}/movies?key=${RAWG_KEY}`);
+      const trailerData = await trailerRes.json();
+      const trailer = trailerData.results?.[0]?.data?.max;
+
       result.innerHTML = `
         <div class="game-result">
           <div>
+            <img src="${game.background_image}" class="game-img">
+
             <h3>${game.name}</h3>
-            <p><strong>Desarrollador:</strong> ${game.developer}</p>
-            <p><strong>Plataformas:</strong> ${game.platforms}</p>
-            <p><strong>Lanzamiento:</strong> ${game.release}</p>
-            <p><strong>Puntuación:</strong> ${game.score}/100</p>
-            <p>${game.description}</p>
+            <p><strong>Géneros:</strong> ${game.genres.map(g => g.name).join(", ")}</p>
+            <p><strong>Plataformas:</strong> ${game.platforms.map(p => p.platform.name).join(", ")}</p>
+            <p><strong>Lanzamiento:</strong> ${game.released}</p>
+            <p><strong>Puntuación RAWG:</strong> ${game.rating}</p>
           </div>
+
           <div class="video-wrapper">
-            <iframe src="${game.videoUrl}" allowfullscreen></iframe>
+            ${
+              trailer
+                ? `<iframe src="${trailer}" allowfullscreen></iframe>`
+                : `<div class="no-result">Sin trailer disponible.</div>`
+            }
           </div>
         </div>
       `;
