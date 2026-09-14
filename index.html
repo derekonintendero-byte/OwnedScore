@@ -26,6 +26,24 @@
       border-bottom: 1px solid #222;
     }
 
+    /* HAMBURGER LEFT */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .hamburger div {
+      width: 30px;
+      height: 3px;
+      background: #fff;
+      border-radius: 3px;
+    }
+
+    /* LOGO RIGHT */
+    .logo {
+      text-align: right;
+    }
     .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
     .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
 
@@ -48,20 +66,6 @@
 
     .nav-link:hover { background: #1b1f2b; color: #fff; }
     .nav-cta { background: #4fd1ff; color: #05060a; font-weight: 600; }
-
-    /* HAMBURGER */
-    .hamburger {
-      display: none;
-      flex-direction: column;
-      gap: 6px;
-      cursor: pointer;
-    }
-    .hamburger div {
-      width: 30px;
-      height: 3px;
-      background: #fff;
-      border-radius: 3px;
-    }
 
     /* MOBILE BREAKPOINT */
     @media (max-width: 700px) {
@@ -223,6 +227,15 @@
 
   <!-- HEADER -->
   <header class="header">
+
+    <!-- HAMBURGUESA IZQUIERDA -->
+    <div class="hamburger" id="hamburger">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- LOGO DERECHA -->
     <div class="logo">
       <span class="logo-main">OwnedScore</span>
       <span class="logo-sub">La verdad del videojuego la dice quien lo juega.</span>
@@ -239,12 +252,6 @@
       <a class="nav-link" id="logoutBtn" style="display:none;">Cerrar sesión</a>
     </nav>
 
-    <!-- MOBILE HAMBURGER -->
-    <div class="hamburger" id="hamburger">
-      <div></div>
-      <div></div>
-      <div></div>
-    </div>
   </header>
 
   <!-- MOBILE OVERLAY -->
