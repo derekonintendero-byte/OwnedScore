@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>OwnedScore – La verdad del jugador</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -25,11 +26,13 @@
     }
     .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
     .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
+
     .nav { display: flex; gap: 1rem; }
     .nav-link {
       font-size: 0.95rem; color: #ddd; text-decoration: none;
       padding: 0.4rem 0.7rem; border-radius: 999px;
       transition: background 0.2s, color 0.2s;
+      cursor: pointer;
     }
     .nav-link:hover { background: #1b1f2b; color: #fff; }
     .nav-cta { background: #4fd1ff; color: #05060a; font-weight: 600; }
@@ -42,6 +45,7 @@
     }
     .hero-text h1 { font-size: 2rem; margin-bottom: 0.5rem; }
     .hero-text p { color: #ccc; max-width: 700px; }
+
     .search-bar {
       margin-top: 1.5rem;
       display: flex;
@@ -99,75 +103,82 @@
       border: 1px solid #22263a;
       font-size: 0.95rem;
       color: #ccc;
-    }  
-  
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
+    }
 
-.modal-box {
-  background: #0b0d13;
-  padding: 2rem;
-  border-radius: 1rem;
-  width: 90%;
-  max-width: 420px;
-  border: 1px solid #1b1f2b;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.modal-close {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: transparent;
-  border: none;
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .modal-box {
+      background: #0b0d13;
+      padding: 2rem;
+      border-radius: 1rem;
+      width: 90%;
+      max-width: 420px;
+      border: 1px solid #1b1f2b;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .modal-close {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
   </style>
 </head>
+
 <body>
 
+  <!-- HEADER -->
   <header class="header">
     <div class="logo">
       <span class="logo-main">OwnedScore</span>
       <span class="logo-sub">La verdad del videojuego la dice quien lo juega.</span>
     </div>
+
     <nav class="nav">
       <a class="nav-link">Inicio</a>
       <a class="nav-link">Juegos</a>
       <a class="nav-link">Ranking</a>
-      <a class="nav-link">Mi perfil</a>
-      <a class="nav-link nav-cta">Iniciar sesión</a>
+
+      <!-- Dinámicos -->
+      <a class="nav-link" id="profileLink" style="display:none;">Mi perfil</a>
+      <a class="nav-link nav-cta" id="loginBtnNav">Iniciar sesión</a>
+      <a class="nav-link" id="logoutBtn" style="display:none;">Cerrar sesión</a>
     </nav>
   </header>
-<div id="loginModal" class="modal-overlay">
-  <div class="modal-box">
-    <button class="modal-close" id="closeModal">✕</button>
 
-    <h2>Iniciar sesión</h2>
-    <input id="login-email" type="email" placeholder="Email">
-    <input id="login-pass" type="password" placeholder="Contraseña">
-    <button id="login-btn">Iniciar sesión</button>
+  <!-- MODAL LOGIN -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal-box">
+      <button class="modal-close" id="closeModal">✕</button>
 
-    <h2>Crear cuenta</h2>
-    <input id="register-email" type="email" placeholder="Email">
-    <input id="register-pass" type="password" placeholder="Contraseña">
-    <button id="register-btn">Crear cuenta</button>
+      <h2>Iniciar sesión</h2>
+      <input id="login-email" type="email" placeholder="Email">
+      <input id="login-pass" type="password" placeholder="Contraseña">
+      <button id="login-btn">Iniciar sesión</button>
+
+      <h2>Crear cuenta</h2>
+      <input id="register-email" type="email" placeholder="Email">
+      <input id="register-pass" type="password" placeholder="Contraseña">
+      <button id="register-btn">Crear cuenta</button>
+    </div>
   </div>
-</div>
 
+  <!-- HERO -->
   <section class="hero">
     <div class="hero-text">
       <h1>Puntuaciones reales de jugadores verificados</h1>
@@ -178,9 +189,9 @@
       <input id="searchInput" type="text" placeholder="Buscar cualquier juego..." />
       <button type="submit">Buscar</button>
     </form>
-  </section>  
+  </section>
 
-
+  <!-- RESULTADOS -->
   <main class="main">
     <section class="section">
       <h2>Resultado de búsqueda</h2>
@@ -188,10 +199,10 @@
     </section>
   </main>
 
+  <!-- BUSCADOR LOCAL (luego lo reemplazamos por RAWG) -->
   <script>
     let games = [];
 
-    // Carga tu base gigante automáticamente
     fetch("https://ownedscore.netlify.app/games.json")
       .then(res => res.json())
       .then(data => games = data);
@@ -229,29 +240,61 @@
     });
   </script>
 
-<script type="module" src="firebase.js"></script>
-<script type="module" src="auth.js"></script>
-<script type="module" src="register.js"></script>
-<script type="module" src="user-state.js"></script>
-<script>
-  const loginBtnNav = document.querySelector('.nav-cta');
-  const loginModal = document.getElementById('loginModal');
-  const closeModal = document.getElementById('closeModal');
+  <!-- FIREBASE -->
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="register.js"></script>
 
-  loginBtnNav.addEventListener('click', () => {
-    loginModal.style.display = 'flex';
-  });
+  <!-- MODAL LOGIC -->
+  <script>
+    const loginBtnNav = document.getElementById('loginBtnNav');
+    const loginModal = document.getElementById('loginModal');
+    const closeModal = document.getElementById('closeModal');
 
-  closeModal.addEventListener('click', () => {
-    loginModal.style.display = 'none';
-  });
+    loginBtnNav.addEventListener('click', () => {
+      loginModal.style.display = 'flex';
+    });
 
-  loginModal.addEventListener('click', (e) => {
-    if (e.target === loginModal) {
+    closeModal.addEventListener('click', () => {
       loginModal.style.display = 'none';
-    }
-  });
-</script>
+    });
+
+    loginModal.addEventListener('click', (e) => {
+      if (e.target === loginModal) {
+        loginModal.style.display = 'none';
+      }
+    });
+  </script>
+
+  <!-- NAVBAR DINÁMICA (Firebase Auth) -->
+  <script type="module">
+    import { auth } from "./firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+    const loginBtnNav = document.getElementById("loginBtnNav");
+    const profileLink = document.getElementById("profileLink");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginBtnNav.style.display = "none";
+        profileLink.style.display = "inline-block";
+        logoutBtn.style.display = "inline-block";
+
+        profileLink.onclick = () => window.location.href = "perfil.html";
+
+        logoutBtn.onclick = async () => {
+          await signOut(auth);
+          window.location.href = "index.html";
+        };
+
+      } else {
+        loginBtnNav.style.display = "inline-block";
+        profileLink.style.display = "none";
+        logoutBtn.style.display = "none";
+      }
+    });
+  </script>
 
 </body>
 </html>
