@@ -23,18 +23,15 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #222;
-      flex-wrap: wrap;
     }
 
     .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
     .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
 
-    /* NAV */
+    /* NAV DESKTOP */
     .nav {
       display: flex;
       gap: 1rem;
-      flex-wrap: wrap;
-      margin-top: 1rem;
     }
 
     .nav-link {
@@ -51,17 +48,54 @@
     .nav-link:hover { background: #1b1f2b; color: #fff; }
     .nav-cta { background: #4fd1ff; color: #05060a; font-weight: 600; }
 
-    /* MOBILE FIX */
-    @media (max-width: 600px) {
-      .nav {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.6rem;
-      }
-      .nav-link {
-        width: 100%;
-        text-align: left;
-      }
+    /* HAMBURGER BUTTON */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .hamburger div {
+      width: 28px;
+      height: 3px;
+      background: #fff;
+      border-radius: 3px;
+    }
+
+    /* MOBILE MENU */
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      background: #0b0d13;
+      border-top: 1px solid #222;
+      padding: 1rem;
+      gap: 0.8rem;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-link {
+      padding: 0.7rem 1rem;
+      background: #11131b;
+      border-radius: 0.6rem;
+      color: #ddd;
+      cursor: pointer;
+    }
+
+    .mobile-link:hover {
+      background: #1b1f2b;
+      color: #fff;
+    }
+
+    /* MOBILE BREAKPOINT */
+    @media (max-width: 700px) {
+      .nav { display: none; }
+      .hamburger { display: flex; }
     }
 
     /* HERO */
@@ -111,7 +145,7 @@
       gap: 1rem;
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 700px) {
       .game-result {
         grid-template-columns: 1fr;
       }
@@ -185,6 +219,7 @@
       <span class="logo-sub">La verdad del videojuego la dice quien lo juega.</span>
     </div>
 
+    <!-- DESKTOP NAV -->
     <nav class="nav">
       <a class="nav-link" id="goHome">Inicio</a>
       <a class="nav-link" id="goGames">Juegos</a>
@@ -194,7 +229,25 @@
       <a class="nav-link nav-cta" id="loginBtnNav">Iniciar sesión</a>
       <a class="nav-link" id="logoutBtn" style="display:none;">Cerrar sesión</a>
     </nav>
+
+    <!-- MOBILE HAMBURGER -->
+    <div class="hamburger" id="hamburger">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
   </header>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-link" id="mHome">Inicio</div>
+    <div class="mobile-link" id="mGames">Juegos</div>
+    <div class="mobile-link" id="mRanking">Ranking</div>
+
+    <div class="mobile-link" id="mProfile" style="display:none;">Mi perfil</div>
+    <div class="mobile-link" id="mLogin">Iniciar sesión</div>
+    <div class="mobile-link" id="mLogout" style="display:none;">Cerrar sesión</div>
+  </div>
 
   <!-- MODAL LOGIN -->
   <div id="loginModal" class="modal-overlay">
@@ -306,6 +359,17 @@
     });
   </script>
 
+  <!-- MOBILE MENU LOGIC -->
+  <script>
+    const hamburger = document.getElementById("hamburger");
+    const mobileMenu = document.getElementById("mobileMenu");
+
+    hamburger.addEventListener("click", () => {
+      mobileMenu.style.display =
+        mobileMenu.style.display === "flex" ? "none" : "flex";
+    });
+  </script>
+
   <!-- NAVBAR DINÁMICA -->
   <script type="module">
     import { auth } from "./firebase.js";
@@ -315,5 +379,49 @@
     const profileLink = document.getElementById("profileLink");
     const logoutBtn = document.getElementById("logoutBtn");
 
+    const mLogin = document.getElementById("mLogin");
+    const mProfile = document.getElementById("mProfile");
+    const mLogout = document.getElementById("mLogout");
+
     onAuthStateChanged(auth, (user) => {
       if (user) {
+        loginBtnNav.style.display = "none";
+        profileLink.style.display = "inline-block";
+        logoutBtn.style.display = "inline-block";
+
+        mLogin.style.display = "none";
+        mProfile.style.display = "block";
+        mLogout.style.display = "block";
+
+        profileLink.onclick = () => window.location.href = "perfil.html";
+        mProfile.onclick = () => window.location.href = "perfil.html";
+
+        logoutBtn.onclick = async () => {
+          await signOut(auth);
+          window.location.href = "index.html";
+        };
+
+        mLogout.onclick = async () => {
+          await signOut(auth);
+          window.location.href = "index.html";
+        };
+
+      } else {
+        loginBtnNav.style.display = "inline-block";
+        profileLink.style.display = "none";
+        logoutBtn.style.display = "none";
+
+        mLogin.style.display = "block";
+        mProfile.style.display = "none";
+        mLogout.style.display = "none";
+
+        mLogin.onclick = () => {
+          mobileMenu.style.display = "none";
+          loginModal.style.display = "flex";
+        };
+      }
+    });
+  </script>
+
+</body>
+</html>
