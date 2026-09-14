@@ -2,31 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>OwnedScore – La verdad del jugador</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <!-- 🔒 SEGURIDAD: Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' https://www.gstatic.com/firebasejs/ https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' https: data:;
-    font-src 'self' https:;
-    connect-src 'self' https://api.rawg.io https://*.firebaseapp.com https://*.firebaseio.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;
-    frame-src https://www.google.com/recaptcha/;
-    object-src 'none';
-    base-uri 'self';
-  " />
-  
-  <!-- 🔒 SEGURIDAD: Protección XSS y clickjacking -->
-  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <meta http-equiv="X-Frame-Options" content="DENY" />
-  <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
-
-  <!-- 🔒 reCAPTCHA v3 Script -->
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,6 +13,7 @@
       color: #f5f5f5;
       line-height: 1.5;
       overflow-x: hidden;
+      visibility: hidden;
     }
 
     .header {
@@ -183,8 +161,6 @@
       width: 100%;
       border-radius: 0.8rem;
       margin-bottom: 1rem;
-      max-height: 400px;
-      object-fit: cover;
     }
 
     .video-wrapper {
@@ -195,7 +171,7 @@
       border-radius: 0.8rem;
       border: 1px solid #22263a;
     }
-    .video-wrapper video {
+    .video-wrapper iframe {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
@@ -312,8 +288,6 @@
       display: flex;
       flex-direction: column;
       gap: 0.8rem;
-      max-height: 90vh;
-      overflow-y: auto;
     }
     .modal-close {
       position: absolute;
@@ -325,58 +299,20 @@
       font-size: 1.2rem;
       cursor: pointer;
     }
-
-    .error-message {
-      color: #e74c3c;
-      font-size: 0.85rem;
-      margin-top: 0.3rem;
-    }
-
-    .success-message {
-      color: #2ecc71;
-      font-size: 0.85rem;
-      margin-top: 0.3rem;
-    }
-
-    .loading-spinner {
-      display: inline-block;
-      width: 1rem;
-      height: 1rem;
-      border: 2px solid #4fd1ff;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      margin-right: 0.5rem;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .captcha-note {
-      font-size: 0.75rem;
-      color: #888;
-      margin-top: 0.5rem;
-      text-align: center;
-    }
   </style>
 </head>
+
 <body>
 
-  <!-- Overlay móvil -->
   <div class="mobile-overlay" id="mobileOverlay"></div>
 
-  <!-- Menú móvil -->
   <div class="mobile-menu" id="mobileMenu">
     <div class="mobile-link" id="mobileHome">Inicio</div>
-    <div class="mobile-link" id="mobileGames">Juegos</div>
-    <div class="mobile-link" id="mobileRanking">Ranking</div>
-    <div class="mobile-link" id="mobileProfile" style="display:none;">Perfil</div>
+    <div class="mobile-link" id="mobileProfile">Perfil</div>
     <div class="mobile-link" id="mobileLogin">Iniciar sesión</div>
-    <div class="mobile-link" id="mobileLogout" style="display:none;">Cerrar sesión</div>
+    <div class="mobile-link" id="mobileLogout">Cerrar sesión</div>
   </div>
 
-  <!-- Header / Navbar -->
   <header class="header">
     <div class="hamburger" id="hamburgerBtn">
       <div></div>
@@ -391,15 +327,12 @@
 
     <nav class="nav">
       <a class="nav-link" id="navHome">Inicio</a>
-      <a class="nav-link" id="navGames">Juegos</a>
-      <a class="nav-link" id="navRanking">Ranking</a>
-      <a class="nav-link" id="navProfile" style="display:none;">Perfil</a>
+      <a class="nav-link" id="navProfile">Perfil</a>
       <a class="nav-link nav-cta" id="navLogin">Iniciar sesión</a>
-      <a class="nav-link" id="navLogout" style="display:none;">Cerrar sesión</a>
+      <a class="nav-link nav-cta" id="navLogout" style="display:none;">Cerrar sesión</a>
     </nav>
   </header>
 
-  <!-- Modal de Login -->
   <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
       <button class="modal-close" id="closeLoginModal">✕</button>
@@ -417,7 +350,6 @@
     </div>
   </div>
 
-  <!-- Modal de Registro -->
   <div class="modal-overlay" id="registerModal">
     <div class="modal-box">
       <button class="modal-close" id="closeRegisterModal">✕</button>
@@ -435,82 +367,47 @@
     </div>
   </div>
 
-  <!-- HERO -->
   <section class="hero">
     <div class="hero-text">
       <h1>Encuentra la verdad de tus juegos</h1>
       <p>Busca cualquier título y descubre su puntuación real, trailers, plataformas y más.</p>
     </div>
 
-    <!-- Buscador -->
     <div class="search-bar">
       <input id="searchInput" type="text" placeholder="Buscar juego..." />
       <button id="searchBtn">Buscar</button>
     </div>
-
-    <!-- Destacados -->
-    <div style="margin-top:1.2rem;">
-      <h2 style="margin-bottom:0.6rem;">Destacados</h2>
-      <div id="featuredContainer" class="featured-grid">
-        <!-- cards injected -->
-      </div>
-    </div>
-
   </section>
 
-  <!-- Sección de resultados -->
   <section class="section">
     <h2>Resultados</h2>
     <div id="resultsContainer"></div>
   </section>
 
-  <!-- SCRIPT DE BÚSQUEDA RAWG -->
-  <script type="module">
-    import { fetchGameBySlug, searchGames, verifyGame } from './rawg.js';
-
+  <script>
     const resultsContainer = document.getElementById("resultsContainer");
     const searchBtn = document.getElementById("searchBtn");
     const searchInput = document.getElementById("searchInput");
 
-    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7"; // ✅ API KEY CONFIGURADA
+    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
 
     async function searchGame(query) {
-      resultsContainer.innerHTML = `
-        <div class="no-result">🔍 Buscando <strong>${query}</strong>...</div>
-      `;
+      resultsContainer.innerHTML = `<div class="no-result">Buscando...</div>`;
 
       try {
-        const data = await searchGames(query);
-        console.log("Respuesta RAWG search:", data);
+        const res = await fetch(
+          `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${RAWG_KEY}`
+        );
+        const data = await res.json();
 
         if (!data.results || data.results.length === 0) {
-          resultsContainer.innerHTML = `
-            <div class="no-result">❌ No se encontró ningún juego con el nombre "<strong>${query}</strong>".</div>
-          `;
+          resultsContainer.innerHTML = `<div class="no-result">No se encontró ningún juego.</div>`;
           return;
         }
 
-        // Filtrar/validar resultados usando verifyGame (re-check with details endpoint)
-        const verified = [];
-        for (const g of data.results) {
-          const ok = await verifyGame(g);
-          if (ok) verified.push(g);
-        }
-
-        if (verified.length === 0) {
-          resultsContainer.innerHTML = `<div class="no-result">❌ No se encontraron resultados verificados para "<strong>${query}</strong>".</div>`;
-          return;
-        }
-
-        renderGame(verified[0]);
+        renderGame(data.results[0]);
       } catch (err) {
-        console.error("Error completo:", err);
-        resultsContainer.innerHTML = `
-          <div class="no-result">
-            ⚠️ Error al buscar: ${err.message}<br>
-            <small>Intenta de nuevo o verifica tu conexión.</small>
-          </div>
-        `;
+        resultsContainer.innerHTML = `<div class="no-result">Error al buscar el juego.</div>`;
       }
     }
 
@@ -523,35 +420,31 @@
         ? game.platforms.map(p => p.platform.name).join(", ")
         : "Desconocidas";
 
-      const videoUrl = game.clip ? game.clip.clip : null;
+      const trailer = game.clip ? game.clip.clip : null;
 
       resultsContainer.innerHTML = `
         <div class="game-result">
 
           <div>
-            ${img ? `<img src="${img}" class="game-img" alt="${name}" />` : ""}
+            <img src="${img}" class="game-img" alt="${name}" />
 
             <h3>${name}</h3>
-            <p><strong>📅 Fecha:</strong> ${released}</p>
-            <p><strong>🎮 Plataformas:</strong> ${platforms}</p>
-            <p><strong>⭐ Rating RAWG:</strong> ${rating}/5</p>
+            <p><strong>Fecha:</strong> ${released}</p>
+            <p><strong>Plataformas:</strong> ${platforms}</p>
+            <p><strong>Rating RAWG:</strong> ${rating}</p>
           </div>
 
           <div>
             ${
-              videoUrl
+              trailer
                 ? `
               <div class="video-wrapper">
-                <video controls style="width:100%; height:100%; position:absolute; top:0; left:0;">
-                  <source src="${videoUrl}" type="video/mp4">
-                  Tu navegador no soporta video.
-                </video>
+                <iframe src="${trailer}" allowfullscreen></iframe>
               </div>
             `
-                : `<div class="no-result">🎬 Este juego no tiene trailer disponible.</div>`
+                : `<div class="no-result">Este juego no tiene trailer disponible.</div>`
             }
 
-            <!-- Scorebox se renderiza aquí -->
             <div class="score-box-wrapper">
               <div class="score-box">
                 <div class="score-title">OwnedScore</div>
@@ -559,39 +452,22 @@
                 <div id="scoreVotes" class="score-votes">0 votos</div>
 
                 <div class="score-your">Tu puntuación</div>
-                <input id="scoreInput" type="number" min="0" max="100" class="score-input" placeholder="0-100" />
+                <input id="scoreInput" type="number" min="0" max="100" class="score-input" />
                 <button id="scoreBtn" class="score-btn">Enviar</button>
 
                 <div class="score-note">Tu voto se guarda en Firebase</div>
               </div>
             </div>
 
-            <div style="margin-top:0.6rem; display:flex; gap:0.4rem;">
-              <a class="btn-small btn-outline" href="games.html?slug=${encodeURIComponent(game.slug)}">Ficha</a>
-              <button class="btn-small" id="openRankingFromResult">Ver ranking</button>
-            </div>
-
           </div>
 
         </div>
       `;
-
-      // Trigger observer code for score buttons (existing module below handles Firebase scores)
-      // We dispatch a custom event so the Firestore scoring script can pick up the new game
-      const ev = new CustomEvent('gameRendered', { detail: { name: game.name } });
-      document.dispatchEvent(ev);
-
-      document.getElementById('openRankingFromResult').onclick = () => {
-        window.location.href = 'ranking.html';
-      };
     }
 
     searchBtn.addEventListener("click", () => {
       const q = searchInput.value.trim();
-      if (q.length === 0) {
-        alert("Escribe el nombre de un juego");
-        return;
-      }
+      if (q.length === 0) return;
       searchGame(q);
     });
 
@@ -602,318 +478,35 @@
         searchGame(q);
       }
     });
-
-    // FEATURED: lista curada de slugs (puedes cambiarla)
-    const featuredSlugs = [
-      'the-witcher-3-wild-hunt',
-      'elden-ring',
-      'cyberpunk-2077',
-      'god-of-war',
-      'hades'
-    ];
-
-    async function renderFeatured() {
-      const container = document.getElementById('featuredContainer');
-      container.innerHTML = `<div class="no-result">Cargando destacados...</div>`;
-      const cards = [];
-      for (const slug of featuredSlugs) {
-        try {
-          const g = await fetchGameBySlug(slug);
-          const ok = await verifyGame(g);
-          if (!ok) continue;
-
-          const card = document.createElement('div');
-          card.className = 'featured-card';
-          card.innerHTML = `
-            <img src="${g.background_image || ''}" alt="${g.name}" />
-            <div class="meta">
-              <h4>${g.name}</h4>
-              <p>${g.released || 'Fecha desconocida'} • ⭐ ${g.rating || 0}/5</p>
-            </div>
-            <div class="actions">
-              <a class="btn-small" href="games.html?slug=${encodeURIComponent(g.slug)}">Ver</a>
-            </div>
-          `;
-          cards.push(card);
-        } catch (err) {
-          console.warn('Error cargando destacado', slug, err);
-        }
-      }
-      container.innerHTML = '';
-      if (cards.length === 0) container.innerHTML = `<div class="no-result">No hay destacados disponibles.</div>`;
-      else cards.forEach(c => container.appendChild(c));
-    }
-
-    // NAV / mobile menu handlers
-    document.getElementById('navGames').onclick = () => { window.location.href = 'games.html'; };
-    document.getElementById('navRanking').onclick = () => { window.location.href = 'ranking.html'; };
-    document.getElementById('navHome').onclick = () => { window.location.href = './'; };
-
-    // hamburger
-    const hamburger = document.getElementById('hamburgerBtn');
-    const mobileMenu = document.getElementById('mobileMenu');
-    const mobileOverlay = document.getElementById('mobileOverlay');
-    hamburger.onclick = () => { mobileMenu.style.left = '0'; mobileOverlay.style.display = 'block'; };
-    mobileOverlay.onclick = () => { mobileMenu.style.left = '-260px'; mobileOverlay.style.display = 'none'; };
-
-    // Mobile links
-    document.getElementById('mobileGames').onclick = () => window.location.href = 'games.html';
-    document.getElementById('mobileRanking').onclick = () => window.location.href = 'ranking.html';
-    document.getElementById('mobileHome').onclick = () => window.location.href = './';
-
-    // Inicializar destacados
-    renderFeatured();
-
   </script>
 
-  <!-- FIREBASE + AUTH (no modificado, compatible con ranking y guardado de votos) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, getDocs, collection } 
+    import { getFirestore, doc, setDoc, getDoc } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // ✅ Configuración de Firebase (mantén la tuya)
     const firebaseConfig = {
-      apiKey: "AIzaSyBS7zyyoSvQfllyQ8RAvdT3zU0GQGh5qUg",
-      authDomain: "ownedscore.firebaseapp.com",
-      projectId: "ownedscore",
-      storageBucket: "ownedscore.firebasestorage.app",
-      messagingSenderId: "987565706441",
-      appId: "1:987565706441:web:988b9f831c19133a8c1118"
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+      projectId: "YOUR_FIREBASE_PROJECT_ID",
+      storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_FIREBASE_SENDER_ID",
+      appId: "YOUR_FIREBASE_APP_ID"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // ELEMENTOS DEL DOM
     const navLogin = document.getElementById("navLogin");
     const navLogout = document.getElementById("navLogout");
     const navProfile = document.getElementById("navProfile");
 
+    const mobileLogin = document.getElementById("mobileLogin");
+    const mobileLogout = document.getElementById("mobileLogout");
+    const mobileProfile = document.getElementById("mobileProfile");
+
     const loginModal = document.getElementById("loginModal");
-    const registerModal = document.getElementById("registerModal");
-
-    const closeLoginModal = document.getElementById("closeLoginModal");
-    const closeRegisterModal = document.getElementById("closeRegisterModal");
-
-    const openRegisterFromLogin = document.getElementById("openRegisterFromLogin");
-    const openLoginFromRegister = document.getElementById("openLoginFromRegister");
-
-    const loginBtn = document.getElementById("loginBtn");
-    const registerBtn = document.getElementById("registerBtn");
-
-    const loginEmail = document.getElementById("loginEmail");
-    const loginPassword = document.getElementById("loginPassword");
-
-    const registerEmail = document.getElementById("registerEmail");
-    const registerPassword = document.getElementById("registerPassword");
-
-    // CONTROL DE MODALES
-    navLogin.onclick = () => loginModal.style.display = "flex";
-    closeLoginModal.onclick = () => loginModal.style.display = "none";
-    closeRegisterModal.onclick = () => registerModal.style.display = "none";
-
-    openRegisterFromLogin.onclick = () => {
-      loginModal.style.display = "none";
-      registerModal.style.display = "flex";
-    };
-
-    openLoginFromRegister.onclick = () => {
-      registerModal.style.display = "none";
-      loginModal.style.display = "flex";
-    };
-
-    // LOGIN
-    loginBtn.onclick = async () => {
-      const email = loginEmail.value.trim();
-      const password = loginPassword.value.trim();
-
-      if (!email || !password) {
-        alert("Completa todos los campos");
-        return;
-      }
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        loginModal.style.display = "none";
-        loginEmail.value = "";
-        loginPassword.value = "";
-        alert("¡Bienvenido!");
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    // REGISTRO
-    registerBtn.onclick = async () => {
-      const email = registerEmail.value.trim();
-      const password = registerPassword.value.trim();
-
-      if (!email || !password) {
-        alert("Completa todos los campos");
-        return;
-      }
-
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        registerModal.style.display = "none";
-        registerEmail.value = "";
-        registerPassword.value = "";
-        alert("¡Cuenta creada exitosamente!");
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    // LOGOUT
-    navLogout.onclick = async () => {
-      await signOut(auth);
-      alert("Sesión cerrada");
-    };
-
-    // ESTADO DE AUTENTICACIÓN
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navLogin.style.display = "none";
-        navLogout.style.display = "inline-block";
-        navProfile.style.display = "inline-block";
-      } else {
-        navLogin.style.display = "inline-block";
-        navLogout.style.display = "none";
-        navProfile.style.display = "none";
-      }
-    });
-
-    // SISTEMA DE PUNTUACIÓN (escucha evento custom para know game name)
-    import { updateScoreColor } from './rawg.js';
-
-    async function loadScore(gameName) {
-      try {
-        const ref = doc(db, "scores", gameName);
-        const snap = await getDoc(ref);
-
-        if (!snap.exists()) {
-          const scoreNum = document.getElementById("scoreNumber");
-          const scoreVotes = document.getElementById("scoreVotes");
-          if (scoreNum) scoreNum.innerText = "0";
-          if (scoreVotes) scoreVotes.innerText = "0 votos";
-          updateScoreColor(0);
-          return;
-        }
-
-        const data = snap.data();
-        const avg = Math.round(data.total / data.votes);
-
-        const scoreNum = document.getElementById("scoreNumber");
-        const scoreVotes = document.getElementById("scoreVotes");
-        if (scoreNum) scoreNum.innerText = avg;
-        if (scoreVotes) scoreVotes.innerText = `${data.votes} votos`;
-
-        updateScoreColor(avg);
-      } catch (err) {
-        console.error("Error al cargar puntuación:", err);
-      }
-    }
-
-    async function saveScore(gameName, value) {
-      try {
-        const ref = doc(db, "scores", gameName);
-        const snap = await getDoc(ref);
-
-        if (!snap.exists()) {
-          await setDoc(ref, {
-            total: value,
-            votes: 1
-          });
-        } else {
-          const data = snap.data();
-          await setDoc(ref, {
-            total: data.total + value,
-            votes: data.votes + 1
-          });
-        }
-
-        loadScore(gameName);
-        alert("¡Puntuación guardada!");
-      } catch (err) {
-        console.error("Error al guardar puntuación:", err);
-        alert("Error al guardar tu voto: " + err.message);
-      }
-    }
-
-    // Cuando se renderiza un juego desde la búsqueda, se disparará este evento
-    document.addEventListener('gameRendered', (e) => {
-      const gameName = e.detail.name;
-      loadScore(gameName);
-
-      const scoreBtn = document.getElementById("scoreBtn");
-      const scoreInput = document.getElementById("scoreInput");
-      if (!scoreBtn || !scoreInput) return;
-
-      // Require login to vote
-      scoreBtn.onclick = async () => {
-        const user = auth.currentUser;
-        if (!user) {
-          // open login modal
-          const loginModalEl = document.getElementById('loginModal');
-          if (loginModalEl) loginModalEl.style.display = 'flex';
-          else alert('Necesitas iniciar sesión para votar');
-          return;
-        }
-
-        const value = parseInt(scoreInput.value);
-
-        if (isNaN(value) || value < 0 || value > 100) {
-          alert("La puntuación debe ser entre 0 y 100");
-          return;
-        }
-
-        // Optionally store userId to prevent duplicate votes (can be implemented later)
-        await saveScore(gameName, value);
-        scoreInput.value = "";
-      };
-
-      // Disable inputs if not logged in
-      const user = auth.currentUser;
-      if (!user) {
-        scoreInput.disabled = true;
-        scoreInput.placeholder = 'Inicia sesión para votar';
-        scoreBtn.disabled = true;
-      } else {
-        scoreInput.disabled = false;
-        scoreBtn.disabled = false;
-        scoreInput.placeholder = '0-100';
-      }
-    });
-
-
-    // Simple helper to list top ranking (used en ranking.html pero útil para debug)
-    async function fetchAllScores() {
-      try {
-        const col = collection(db, 'scores');
-        const snaps = await getDocs(col);
-        const arr = [];
-        snaps.forEach(s => {
-          const d = s.data();
-          arr.push({ name: s.id, total: d.total, votes: d.votes, avg: Math.round(d.total / d.votes) });
-        });
-        return arr.sort((a,b)=> b.avg - a.avg);
-      } catch (err) {
-        console.error('Error fetching scores', err);
-        return [];
-      }
-    }
-
-    // Exponer en window para poder usar en ranking.html si es necesario
-    window.__ownedscore = { fetchAllScores };
-
-  </script>
-
-  <!-- RAWG helpers (module) -->
-  <script type="module" src="./rawg.js"></script>
-
-</body>
-</html>
+    const registerModal = document
