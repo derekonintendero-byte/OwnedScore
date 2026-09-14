@@ -333,6 +333,7 @@
     </nav>
   </header>
 
+  <!-- Modal Login -->
   <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
       <button class="modal-close" id="closeLoginModal">✕</button>
@@ -350,6 +351,7 @@
     </div>
   </div>
 
+  <!-- Modal Registro -->
   <div class="modal-overlay" id="registerModal">
     <div class="modal-box">
       <button class="modal-close" id="closeRegisterModal">✕</button>
@@ -367,6 +369,7 @@
     </div>
   </div>
 
+  <!-- HERO -->
   <section class="hero">
     <div class="hero-text">
       <h1>Encuentra la verdad de tus juegos</h1>
@@ -379,134 +382,33 @@
     </div>
   </section>
 
+  <!-- RESULTADOS -->
   <section class="section">
     <h2>Resultados</h2>
     <div id="resultsContainer"></div>
   </section>
 
+  <!-- RAWG -->
+  <script type="module" src="rawg.js"></script>
+
+  <!-- FIREBASE -->
+  <script type="module" src="firebase.js"></script>
+
+  <!-- AUTH -->
+  <script type="module" src="auth.js"></script>
+
+  <!-- REGISTER -->
+  <script type="module" src="register.js"></script>
+
+  <!-- SCORE -->
+  <script type="module" src="score.js"></script>
+
+  <!-- FIX PARPADEO -->
   <script>
-    const resultsContainer = document.getElementById("resultsContainer");
-    const searchBtn = document.getElementById("searchBtn");
-    const searchInput = document.getElementById("searchInput");
-
-    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
-
-    async function searchGame(query) {
-      resultsContainer.innerHTML = `<div class="no-result">Buscando...</div>`;
-
-      try {
-        const res = await fetch(
-          `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${RAWG_KEY}`
-        );
-        const data = await res.json();
-
-        if (!data.results || data.results.length === 0) {
-          resultsContainer.innerHTML = `<div class="no-result">No se encontró ningún juego.</div>`;
-          return;
-        }
-
-        renderGame(data.results[0]);
-      } catch (err) {
-        resultsContainer.innerHTML = `<div class="no-result">Error al buscar el juego.</div>`;
-      }
-    }
-
-    function renderGame(game) {
-      const img = game.background_image || "";
-      const name = game.name || "Sin nombre";
-      const released = game.released || "Fecha desconocida";
-      const rating = game.rating || 0;
-      const platforms = game.platforms
-        ? game.platforms.map(p => p.platform.name).join(", ")
-        : "Desconocidas";
-
-      const trailer = game.clip ? game.clip.clip : null;
-
-      resultsContainer.innerHTML = `
-        <div class="game-result">
-
-          <div>
-            <img src="${img}" class="game-img" alt="${name}" />
-
-            <h3>${name}</h3>
-            <p><strong>Fecha:</strong> ${released}</p>
-            <p><strong>Plataformas:</strong> ${platforms}</p>
-            <p><strong>Rating RAWG:</strong> ${rating}</p>
-          </div>
-
-          <div>
-            ${
-              trailer
-                ? `
-              <div class="video-wrapper">
-                <iframe src="${trailer}" allowfullscreen></iframe>
-              </div>
-            `
-                : `<div class="no-result">Este juego no tiene trailer disponible.</div>`
-            }
-
-            <div class="score-box-wrapper">
-              <div class="score-box">
-                <div class="score-title">OwnedScore</div>
-                <div id="scoreNumber" class="score-number score-green">0</div>
-                <div id="scoreVotes" class="score-votes">0 votos</div>
-
-                <div class="score-your">Tu puntuación</div>
-                <input id="scoreInput" type="number" min="0" max="100" class="score-input" />
-                <button id="scoreBtn" class="score-btn">Enviar</button>
-
-                <div class="score-note">Tu voto se guarda en Firebase</div>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      `;
-    }
-
-    searchBtn.addEventListener("click", () => {
-      const q = searchInput.value.trim();
-      if (q.length === 0) return;
-      searchGame(q);
-    });
-
-    searchInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        const q = searchInput.value.trim();
-        if (q.length === 0) return;
-        searchGame(q);
-      }
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.style.visibility = "visible";
     });
   </script>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } 
-      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } 
-      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "YOUR_FIREBASE_API_KEY",
-      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
-      projectId: "YOUR_FIREBASE_PROJECT_ID",
-      storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_FIREBASE_SENDER_ID",
-      appId: "YOUR_FIREBASE_APP_ID"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const navLogin = document.getElementById("navLogin");
-    const navLogout = document.getElementById("navLogout");
-    const navProfile = document.getElementById("navProfile");
-
-    const mobileLogin = document.getElementById("mobileLogin");
-    const mobileLogout = document.getElementById("mobileLogout");
-    const mobileProfile = document.getElementById("mobileProfile");
-
-    const loginModal = document.getElementById("loginModal");
-    const registerModal = document
+</body>
+</html>
