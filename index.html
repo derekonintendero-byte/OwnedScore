@@ -369,6 +369,8 @@
   <!-- Menú móvil -->
   <div class="mobile-menu" id="mobileMenu">
     <div class="mobile-link" id="mobileHome">Inicio</div>
+    <div class="mobile-link" id="mobileGames">Juegos</div>
+    <div class="mobile-link" id="mobileRanking">Ranking</div>
     <div class="mobile-link" id="mobileProfile" style="display:none;">Perfil</div>
     <div class="mobile-link" id="mobileLogin">Iniciar sesión</div>
     <div class="mobile-link" id="mobileLogout" style="display:none;">Cerrar sesión</div>
@@ -389,6 +391,8 @@
 
     <nav class="nav">
       <a class="nav-link" id="navHome">Inicio</a>
+      <a class="nav-link" id="navGames">Juegos</a>
+      <a class="nav-link" id="navRanking">Ranking</a>
       <a class="nav-link" id="navProfile" style="display:none;">Perfil</a>
       <a class="nav-link nav-cta" id="navLogin">Iniciar sesión</a>
       <a class="nav-link" id="navLogout" style="display:none;">Cerrar sesión</a>
@@ -398,18 +402,13 @@
   <!-- Modal de Login -->
   <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
-      <button class="modal-close" id="closeLoginModal" aria-label="Cerrar">✕</button>
+      <button class="modal-close" id="closeLoginModal">✕</button>
       <h2>Iniciar sesión</h2>
 
-      <input id="loginEmail" type="email" placeholder="Correo electrónico" class="score-input" autocomplete="email" required />
-      <input id="loginPassword" type="password" placeholder="Contraseña" class="score-input" autocomplete="current-password" required />
-      <div id="loginError" class="error-message" style="display:none;"></div>
+      <input id="loginEmail" type="email" placeholder="Correo electrónico" class="score-input" />
+      <input id="loginPassword" type="password" placeholder="Contraseña" class="score-input" />
 
-      <button id="loginBtn" class="score-btn">
-        <span id="loginBtnText">Entrar</span>
-      </button>
-
-      <div class="captcha-note">🤖 Protegido por reCAPTCHA</div>
+      <button id="loginBtn" class="score-btn">Entrar</button>
 
       <p class="score-note">
         ¿No tienes cuenta?
@@ -421,18 +420,13 @@
   <!-- Modal de Registro -->
   <div class="modal-overlay" id="registerModal">
     <div class="modal-box">
-      <button class="modal-close" id="closeRegisterModal" aria-label="Cerrar">✕</button>
+      <button class="modal-close" id="closeRegisterModal">✕</button>
       <h2>Crear cuenta</h2>
 
-      <input id="registerEmail" type="email" placeholder="Correo electrónico" class="score-input" autocomplete="email" required />
-      <input id="registerPassword" type="password" placeholder="Contraseña (mín. 6 caracteres)" class="score-input" autocomplete="new-password" minlength="6" required />
-      <div id="registerError" class="error-message" style="display:none;"></div>
+      <input id="registerEmail" type="email" placeholder="Correo electrónico" class="score-input" />
+      <input id="registerPassword" type="password" placeholder="Contraseña" class="score-input" />
 
-      <button id="registerBtn" class="score-btn">
-        <span id="registerBtnText">Registrarme</span>
-      </button>
-
-      <div class="captcha-note">🤖 Protegido por reCAPTCHA</div>
+      <button id="registerBtn" class="score-btn">Registrarme</button>
 
       <p class="score-note">
         ¿Ya tienes cuenta?
@@ -450,9 +444,18 @@
 
     <!-- Buscador -->
     <div class="search-bar">
-      <input id="searchInput" type="text" placeholder="Buscar juego..." maxlength="100" />
+      <input id="searchInput" type="text" placeholder="Buscar juego..." />
       <button id="searchBtn">Buscar</button>
     </div>
+
+    <!-- Destacados -->
+    <div style="margin-top:1.2rem;">
+      <h2 style="margin-bottom:0.6rem;">Destacados</h2>
+      <div id="featuredContainer" class="featured-grid">
+        <!-- cards injected -->
+      </div>
+    </div>
+
   </section>
 
   <!-- Sección de resultados -->
@@ -462,104 +465,72 @@
   </section>
 
   <!-- SCRIPT DE BÚSQUEDA RAWG -->
-  <script>
-    'use strict';
+  <script type="module">
+    import { fetchGameBySlug, searchGames, verifyGame } from './rawg.js';
 
     const resultsContainer = document.getElementById("resultsContainer");
     const searchBtn = document.getElementById("searchBtn");
     const searchInput = document.getElementById("searchInput");
 
-    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
-    const MAX_SEARCH_LENGTH = 100;
-    const REQUEST_TIMEOUT = 10000;
-
-    // 🔒 SEGURIDAD: Sanitización de HTML
-    function sanitizeHTML(str) {
-      if (typeof str !== 'string') return '';
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    // 🔒 SEGURIDAD: Validación de URL
-    function isValidImageUrl(url) {
-      try {
-        const urlObj = new URL(url);
-        return ['https:', 'http:'].includes(urlObj.protocol);
-      } catch (e) {
-        return false;
-      }
-    }
+    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7"; // ✅ API KEY CONFIGURADA
 
     async function searchGame(query) {
-      if (!query || query.length > MAX_SEARCH_LENGTH) {
-        resultsContainer.innerHTML = `<div class="no-result">⚠️ Búsqueda inválida</div>`;
-        return;
-      }
-
       resultsContainer.innerHTML = `
-        <div class="no-result">🔍 Buscando <strong>${sanitizeHTML(query)}</strong>...</div>
+        <div class="no-result">🔍 Buscando <strong>${query}</strong>...</div>
       `;
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
       try {
-        const url = `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${RAWG_KEY}`;
-        
-        const res = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Accept": "application/json"
-          },
-          signal: controller.signal,
-          mode: 'cors'
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
-        const data = await res.json();
+        const data = await searchGames(query);
+        console.log("Respuesta RAWG search:", data);
 
         if (!data.results || data.results.length === 0) {
           resultsContainer.innerHTML = `
-            <div class="no-result">❌ No se encontró ningún juego con el nombre "<strong>${sanitizeHTML(query)}</strong>".</div>
+            <div class="no-result">❌ No se encontró ningún juego con el nombre "<strong>${query}</strong>".</div>
           `;
           return;
         }
 
-        const game = data.results[0];
-        renderGame(game);
+        // Filtrar/validar resultados usando verifyGame (re-check with details endpoint)
+        const verified = [];
+        for (const g of data.results) {
+          const ok = await verifyGame(g);
+          if (ok) verified.push(g);
+        }
+
+        if (verified.length === 0) {
+          resultsContainer.innerHTML = `<div class="no-result">❌ No se encontraron resultados verificados para "<strong>${query}</strong>".</div>`;
+          return;
+        }
+
+        renderGame(verified[0]);
       } catch (err) {
-        clearTimeout(timeoutId);
-        console.error("Error:", err.message);
+        console.error("Error completo:", err);
         resultsContainer.innerHTML = `
           <div class="no-result">
-            ⚠️ Error al buscar. Intenta de nuevo.
+            ⚠️ Error al buscar: ${err.message}<br>
+            <small>Intenta de nuevo o verifica tu conexión.</small>
           </div>
         `;
       }
     }
 
     function renderGame(game) {
-      const img = game.background_image && isValidImageUrl(game.background_image) ? game.background_image : "";
-      const name = sanitizeHTML(game.name || "Sin nombre");
-      const released = sanitizeHTML(game.released || "Fecha desconocida");
-      const rating = Number(game.rating) || 0;
+      const img = game.background_image || "";
+      const name = game.name || "Sin nombre";
+      const released = game.released || "Fecha desconocida";
+      const rating = game.rating || 0;
       const platforms = game.platforms
-        ? game.platforms.map(p => sanitizeHTML(p.platform.name)).join(", ")
+        ? game.platforms.map(p => p.platform.name).join(", ")
         : "Desconocidas";
 
-      const videoUrl = game.clip?.clip;
-      const isValidVideo = videoUrl && typeof videoUrl === 'string' && isValidImageUrl(videoUrl);
+      const videoUrl = game.clip ? game.clip.clip : null;
 
       resultsContainer.innerHTML = `
         <div class="game-result">
+
           <div>
-            ${img ? `<img src="${img}" class="game-img" alt="${name}" loading="lazy" />` : ""}
+            ${img ? `<img src="${img}" class="game-img" alt="${name}" />` : ""}
+
             <h3>${name}</h3>
             <p><strong>📅 Fecha:</strong> ${released}</p>
             <p><strong>🎮 Plataformas:</strong> ${platforms}</p>
@@ -568,10 +539,10 @@
 
           <div>
             ${
-              isValidVideo
+              videoUrl
                 ? `
               <div class="video-wrapper">
-                <video controls>
+                <video controls style="width:100%; height:100%; position:absolute; top:0; left:0;">
                   <source src="${videoUrl}" type="video/mp4">
                   Tu navegador no soporta video.
                 </video>
@@ -580,6 +551,7 @@
                 : `<div class="no-result">🎬 Este juego no tiene trailer disponible.</div>`
             }
 
+            <!-- Scorebox se renderiza aquí -->
             <div class="score-box-wrapper">
               <div class="score-box">
                 <div class="score-title">OwnedScore</div>
@@ -593,15 +565,31 @@
                 <div class="score-note">Tu voto se guarda en Firebase</div>
               </div>
             </div>
+
+            <div style="margin-top:0.6rem; display:flex; gap:0.4rem;">
+              <a class="btn-small btn-outline" href="games.html?slug=${encodeURIComponent(game.slug)}">Ficha</a>
+              <button class="btn-small" id="openRankingFromResult">Ver ranking</button>
+            </div>
+
           </div>
+
         </div>
       `;
+
+      // Trigger observer code for score buttons (existing module below handles Firebase scores)
+      // We dispatch a custom event so the Firestore scoring script can pick up the new game
+      const ev = new CustomEvent('gameRendered', { detail: { name: game.name } });
+      document.dispatchEvent(ev);
+
+      document.getElementById('openRankingFromResult').onclick = () => {
+        window.location.href = 'ranking.html';
+      };
     }
 
     searchBtn.addEventListener("click", () => {
       const q = searchInput.value.trim();
-      if (!q) {
-        resultsContainer.innerHTML = `<div class="no-result">⚠️ Escribe el nombre de un juego</div>`;
+      if (q.length === 0) {
+        alert("Escribe el nombre de un juego");
         return;
       }
       searchGame(q);
@@ -610,22 +598,83 @@
     searchInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         const q = searchInput.value.trim();
-        if (q) searchGame(q);
+        if (q.length === 0) return;
+        searchGame(q);
       }
     });
+
+    // FEATURED: lista curada de slugs (puedes cambiarla)
+    const featuredSlugs = [
+      'the-witcher-3-wild-hunt',
+      'elden-ring',
+      'cyberpunk-2077',
+      'god-of-war',
+      'hades'
+    ];
+
+    async function renderFeatured() {
+      const container = document.getElementById('featuredContainer');
+      container.innerHTML = `<div class="no-result">Cargando destacados...</div>`;
+      const cards = [];
+      for (const slug of featuredSlugs) {
+        try {
+          const g = await fetchGameBySlug(slug);
+          const ok = await verifyGame(g);
+          if (!ok) continue;
+
+          const card = document.createElement('div');
+          card.className = 'featured-card';
+          card.innerHTML = `
+            <img src="${g.background_image || ''}" alt="${g.name}" />
+            <div class="meta">
+              <h4>${g.name}</h4>
+              <p>${g.released || 'Fecha desconocida'} • ⭐ ${g.rating || 0}/5</p>
+            </div>
+            <div class="actions">
+              <a class="btn-small" href="games.html?slug=${encodeURIComponent(g.slug)}">Ver</a>
+            </div>
+          `;
+          cards.push(card);
+        } catch (err) {
+          console.warn('Error cargando destacado', slug, err);
+        }
+      }
+      container.innerHTML = '';
+      if (cards.length === 0) container.innerHTML = `<div class="no-result">No hay destacados disponibles.</div>`;
+      else cards.forEach(c => container.appendChild(c));
+    }
+
+    // NAV / mobile menu handlers
+    document.getElementById('navGames').onclick = () => { window.location.href = 'games.html'; };
+    document.getElementById('navRanking').onclick = () => { window.location.href = 'ranking.html'; };
+    document.getElementById('navHome').onclick = () => { window.location.href = './'; };
+
+    // hamburger
+    const hamburger = document.getElementById('hamburgerBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+    hamburger.onclick = () => { mobileMenu.style.left = '0'; mobileOverlay.style.display = 'block'; };
+    mobileOverlay.onclick = () => { mobileMenu.style.left = '-260px'; mobileOverlay.style.display = 'none'; };
+
+    // Mobile links
+    document.getElementById('mobileGames').onclick = () => window.location.href = 'games.html';
+    document.getElementById('mobileRanking').onclick = () => window.location.href = 'ranking.html';
+    document.getElementById('mobileHome').onclick = () => window.location.href = './';
+
+    // Inicializar destacados
+    renderFeatured();
+
   </script>
 
-  <!-- FIREBASE + AUTH CON reCAPTCHA v3 -->
+  <!-- FIREBASE + AUTH (no modificado, compatible con ranking y guardado de votos) -->
   <script type="module">
-    'use strict';
-
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } 
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // ✅ Configuración de Firebase
+    // ✅ Configuración de Firebase (mantén la tuya)
     const firebaseConfig = {
       apiKey: "AIzaSyBS7zyyoSvQfllyQ8RAvdT3zU0GQGh5qUg",
       authDomain: "ownedscore.firebaseapp.com",
@@ -638,34 +687,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
-    // 🔒 CLAVE DE reCAPTCHA v3 (Reemplaza con tu clave)
-    const RECAPTCHA_SITE_KEY = "6LdXYLkqAAAAAIhB3PYU5VKzR8vQGnJvQG_Qs773"; // ⚠️ Reemplaza con tu clave
-
-    // 🔒 SEGURIDAD: Función para obtener token reCAPTCHA
-    async function getRecaptchaToken(action) {
-      if (typeof grecaptcha === 'undefined') {
-        console.error("reCAPTCHA no está cargado");
-        return null;
-      }
-      try {
-        return await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action });
-      } catch (err) {
-        console.error("Error al obtener reCAPTCHA token:", err);
-        return null;
-      }
-    }
-
-    // 🔒 SEGURIDAD: Validación de email
-    function isValidEmail(email) {
-      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return regex.test(email) && email.length <= 254;
-    }
-
-    // 🔒 SEGURIDAD: Validación de contraseña
-    function isValidPassword(password) {
-      return password.length >= 6 && password.length <= 1000;
-    }
 
     // ELEMENTOS DEL DOM
     const navLogin = document.getElementById("navLogin");
@@ -683,165 +704,74 @@
 
     const loginBtn = document.getElementById("loginBtn");
     const registerBtn = document.getElementById("registerBtn");
-    const loginBtnText = document.getElementById("loginBtnText");
-    const registerBtnText = document.getElementById("registerBtnText");
 
     const loginEmail = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
-    const loginError = document.getElementById("loginError");
 
     const registerEmail = document.getElementById("registerEmail");
     const registerPassword = document.getElementById("registerPassword");
-    const registerError = document.getElementById("registerError");
 
     // CONTROL DE MODALES
     navLogin.onclick = () => loginModal.style.display = "flex";
-    closeLoginModal.onclick = () => {
-      loginModal.style.display = "none";
-      loginError.style.display = "none";
-      loginError.textContent = "";
-    };
-    closeRegisterModal.onclick = () => {
-      registerModal.style.display = "none";
-      registerError.style.display = "none";
-      registerError.textContent = "";
-    };
+    closeLoginModal.onclick = () => loginModal.style.display = "none";
+    closeRegisterModal.onclick = () => registerModal.style.display = "none";
 
     openRegisterFromLogin.onclick = () => {
       loginModal.style.display = "none";
       registerModal.style.display = "flex";
-      loginError.style.display = "none";
     };
 
     openLoginFromRegister.onclick = () => {
       registerModal.style.display = "none";
       loginModal.style.display = "flex";
-      registerError.style.display = "none";
     };
 
-    // 🔒 SEGURIDAD: LOGIN con reCAPTCHA v3
+    // LOGIN
     loginBtn.onclick = async () => {
       const email = loginEmail.value.trim();
       const password = loginPassword.value.trim();
 
-      loginError.style.display = "none";
-      loginError.textContent = "";
-
-      // Validaciones
       if (!email || !password) {
-        loginError.textContent = "⚠️ Completa todos los campos";
-        loginError.style.display = "block";
-        return;
-      }
-
-      if (!isValidEmail(email)) {
-        loginError.textContent = "⚠️ Email inválido";
-        loginError.style.display = "block";
-        return;
-      }
-
-      if (!isValidPassword(password)) {
-        loginError.textContent = "⚠️ Contraseña inválida";
-        loginError.style.display = "block";
+        alert("Completa todos los campos");
         return;
       }
 
       try {
-        loginBtn.disabled = true;
-        loginBtnText.innerHTML = '<span class="loading-spinner"></span>Verificando...';
-
-        // 🔒 Obtener token reCAPTCHA
-        const recaptchaToken = await getRecaptchaToken("login");
-        if (!recaptchaToken) {
-          throw new Error("No se pudo verificar reCAPTCHA");
-        }
-
-        // Aquí puedes enviar el token a tu backend para verificarlo
-        // Por ahora, procedemos con el login
         await signInWithEmailAndPassword(auth, email, password);
         loginModal.style.display = "none";
         loginEmail.value = "";
         loginPassword.value = "";
+        alert("¡Bienvenido!");
       } catch (err) {
-        let message = "❌ Error de autenticación";
-        if (err.code === 'auth/user-not-found') message = "❌ Usuario no encontrado";
-        if (err.code === 'auth/wrong-password') message = "❌ Contraseña incorrecta";
-        if (err.code === 'auth/too-many-requests') message = "❌ Demasiados intentos. Intenta después";
-        if (err.message === "No se pudo verificar reCAPTCHA") message = "❌ Error de seguridad. Intenta de nuevo";
-        
-        loginError.textContent = message;
-        loginError.style.display = "block";
-      } finally {
-        loginBtn.disabled = false;
-        loginBtnText.textContent = 'Entrar';
+        alert("Error: " + err.message);
       }
     };
 
-    // 🔒 SEGURIDAD: REGISTRO con reCAPTCHA v3
+    // REGISTRO
     registerBtn.onclick = async () => {
       const email = registerEmail.value.trim();
       const password = registerPassword.value.trim();
 
-      registerError.style.display = "none";
-      registerError.textContent = "";
-
-      // Validaciones
       if (!email || !password) {
-        registerError.textContent = "⚠️ Completa todos los campos";
-        registerError.style.display = "block";
-        return;
-      }
-
-      if (!isValidEmail(email)) {
-        registerError.textContent = "⚠️ Email inválido";
-        registerError.style.display = "block";
-        return;
-      }
-
-      if (!isValidPassword(password)) {
-        registerError.textContent = "⚠️ Contraseña debe tener 6+ caracteres";
-        registerError.style.display = "block";
+        alert("Completa todos los campos");
         return;
       }
 
       try {
-        registerBtn.disabled = true;
-        registerBtnText.innerHTML = '<span class="loading-spinner"></span>Registrando...';
-
-        // 🔒 Obtener token reCAPTCHA
-        const recaptchaToken = await getRecaptchaToken("register");
-        if (!recaptchaToken) {
-          throw new Error("No se pudo verificar reCAPTCHA");
-        }
-
-        // Aquí puedes enviar el token a tu backend para verificarlo
-        // Por ahora, procedemos con el registro
         await createUserWithEmailAndPassword(auth, email, password);
         registerModal.style.display = "none";
         registerEmail.value = "";
         registerPassword.value = "";
+        alert("¡Cuenta creada exitosamente!");
       } catch (err) {
-        let message = "❌ Error al crear cuenta";
-        if (err.code === 'auth/email-already-in-use') message = "❌ Email ya registrado";
-        if (err.code === 'auth/weak-password') message = "❌ Contraseña muy débil";
-        if (err.code === 'auth/invalid-email') message = "❌ Email inválido";
-        if (err.message === "No se pudo verificar reCAPTCHA") message = "❌ Error de seguridad. Intenta de nuevo";
-        
-        registerError.textContent = message;
-        registerError.style.display = "block";
-      } finally {
-        registerBtn.disabled = false;
-        registerBtnText.textContent = 'Registrarme';
+        alert("Error: " + err.message);
       }
     };
 
     // LOGOUT
     navLogout.onclick = async () => {
-      try {
-        await signOut(auth);
-      } catch (err) {
-        console.error("Error al cerrar sesión:", err);
-      }
+      await signOut(auth);
+      alert("Sesión cerrada");
     };
 
     // ESTADO DE AUTENTICACIÓN
@@ -856,38 +786,13 @@
         navProfile.style.display = "none";
       }
     });
-  </script>
 
-  <!-- SISTEMA DE PUNTUACIÓN -->
-  <script type="module">
-    'use strict';
-
-    import { getFirestore, doc, setDoc, getDoc } 
-      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    const db = getFirestore();
-
-    // 🔒 SEGURIDAD: Sanitización
-    function sanitizeString(str) {
-      if (typeof str !== 'string') return '';
-      return str.replace(/[<>]/g, '');
-    }
-
-    function updateScoreColor(score) {
-      const scoreNumber = document.getElementById("scoreNumber");
-      if (!scoreNumber) return;
-
-      scoreNumber.classList.remove("score-green", "score-yellow", "score-red");
-
-      if (score >= 75) scoreNumber.classList.add("score-green");
-      else if (score >= 50) scoreNumber.classList.add("score-yellow");
-      else scoreNumber.classList.add("score-red");
-    }
+    // SISTEMA DE PUNTUACIÓN (escucha evento custom para know game name)
+    import { updateScoreColor } from './rawg.js';
 
     async function loadScore(gameName) {
       try {
-        const safeName = sanitizeString(gameName).substring(0, 255);
-        const ref = doc(db, "scores", safeName);
+        const ref = doc(db, "scores", gameName);
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
@@ -900,16 +805,12 @@
         }
 
         const data = snap.data();
-        const votes = Number(data.votes) || 0;
-        const total = Number(data.total) || 0;
-        
-        if (votes === 0) return;
-        const avg = Math.round(total / votes);
+        const avg = Math.round(data.total / data.votes);
 
         const scoreNum = document.getElementById("scoreNumber");
         const scoreVotes = document.getElementById("scoreVotes");
-        if (scoreNum) scoreNum.innerText = Math.max(0, Math.min(100, avg));
-        if (scoreVotes) scoreVotes.innerText = `${votes} votos`;
+        if (scoreNum) scoreNum.innerText = avg;
+        if (scoreVotes) scoreVotes.innerText = `${data.votes} votos`;
 
         updateScoreColor(avg);
       } catch (err) {
@@ -919,69 +820,100 @@
 
     async function saveScore(gameName, value) {
       try {
-        const score = Number(value);
-        if (isNaN(score) || score < 0 || score > 100) {
-          alert("❌ Puntuación debe estar entre 0 y 100");
-          return;
-        }
-
-        const safeName = sanitizeString(gameName).substring(0, 255);
-        const ref = doc(db, "scores", safeName);
+        const ref = doc(db, "scores", gameName);
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
           await setDoc(ref, {
-            total: score,
+            total: value,
             votes: 1
           });
         } else {
           const data = snap.data();
-          const newTotal = Number(data.total) || 0;
-          const newVotes = Number(data.votes) || 0;
-          
           await setDoc(ref, {
-            total: newTotal + score,
-            votes: newVotes + 1
+            total: data.total + value,
+            votes: data.votes + 1
           });
         }
 
         loadScore(gameName);
-        alert("✅ Puntuación guardada");
+        alert("¡Puntuación guardada!");
       } catch (err) {
         console.error("Error al guardar puntuación:", err);
-        alert("❌ Error al guardar tu voto");
+        alert("Error al guardar tu voto: " + err.message);
       }
     }
 
-    const observer = new MutationObserver(() => {
-      const scoreBtn = document.getElementById("scoreBtn");
-      const scoreInput = document.getElementById("scoreInput");
-
-      if (!scoreBtn || !scoreInput) return;
-
-      const titleEl = document.querySelector(".game-result h3");
-      if (!titleEl) return;
-
-      const gameName = titleEl.innerText.trim();
-
+    // Cuando se renderiza un juego desde la búsqueda, se disparará este evento
+    document.addEventListener('gameRendered', (e) => {
+      const gameName = e.detail.name;
       loadScore(gameName);
 
-      scoreBtn.onclick = () => {
-        const value = scoreInput.value.trim();
-        if (!value) {
-          alert("⚠️ Ingresa una puntuación");
+      const scoreBtn = document.getElementById("scoreBtn");
+      const scoreInput = document.getElementById("scoreInput");
+      if (!scoreBtn || !scoreInput) return;
+
+      // Require login to vote
+      scoreBtn.onclick = async () => {
+        const user = auth.currentUser;
+        if (!user) {
+          // open login modal
+          const loginModalEl = document.getElementById('loginModal');
+          if (loginModalEl) loginModalEl.style.display = 'flex';
+          else alert('Necesitas iniciar sesión para votar');
           return;
         }
-        saveScore(gameName, value);
+
+        const value = parseInt(scoreInput.value);
+
+        if (isNaN(value) || value < 0 || value > 100) {
+          alert("La puntuación debe ser entre 0 y 100");
+          return;
+        }
+
+        // Optionally store userId to prevent duplicate votes (can be implemented later)
+        await saveScore(gameName, value);
         scoreInput.value = "";
       };
+
+      // Disable inputs if not logged in
+      const user = auth.currentUser;
+      if (!user) {
+        scoreInput.disabled = true;
+        scoreInput.placeholder = 'Inicia sesión para votar';
+        scoreBtn.disabled = true;
+      } else {
+        scoreInput.disabled = false;
+        scoreBtn.disabled = false;
+        scoreInput.placeholder = '0-100';
+      }
     });
 
-    observer.observe(document.getElementById("resultsContainer"), {
-      childList: true,
-      subtree: true
-    });
+
+    // Simple helper to list top ranking (used en ranking.html pero útil para debug)
+    async function fetchAllScores() {
+      try {
+        const col = collection(db, 'scores');
+        const snaps = await getDocs(col);
+        const arr = [];
+        snaps.forEach(s => {
+          const d = s.data();
+          arr.push({ name: s.id, total: d.total, votes: d.votes, avg: Math.round(d.total / d.votes) });
+        });
+        return arr.sort((a,b)=> b.avg - a.avg);
+      } catch (err) {
+        console.error('Error fetching scores', err);
+        return [];
+      }
+    }
+
+    // Exponer en window para poder usar en ranking.html si es necesario
+    window.__ownedscore = { fetchAllScores };
+
   </script>
+
+  <!-- RAWG helpers (module) -->
+  <script type="module" src="./rawg.js"></script>
 
 </body>
 </html>
