@@ -2,301 +2,46 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>OwnedScore – La verdad del jugador</title>
+  <title>Perfil – OwnedScore</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, sans-serif;
       background: #05060a;
-      color: #f5f5f5;
-      line-height: 1.5;
-      overflow-x: hidden;
-      visibility: hidden;
-    }
-
-    .header {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #222;
-    }
-
-    .hamburger {
-      display: none;
-      flex-direction: column;
-      gap: 6px;
-      cursor: pointer;
-    }
-    .hamburger div {
-      width: 30px;
-      height: 3px;
-      background: #fff;
-      border-radius: 3px;
-    }
-
-    .logo {
-      text-align: right;
-    }
-    .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
-    .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
-
-    .nav {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .nav-link {
-      font-size: 0.95rem;
-      color: #ddd;
-      text-decoration: none;
-      padding: 0.4rem 0.7rem;
-      border-radius: 999px;
-      transition: background 0.2s, color 0.2s;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .nav-link:hover { background: #1b1f2b; color: #fff; }
-    .nav-cta { background: #4fd1ff; color: #05060a; font-weight: 600; }
-
-    @media (max-width: 700px) {
-      .nav { display: none; }
-      .hamburger { display: flex; }
-    }
-
-    .mobile-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: none;
-      z-index: 998;
-    }
-
-    .mobile-menu {
-      position: fixed;
-      top: 0;
-      left: -260px;
-      width: 260px;
-      height: 100%;
-      background: #0b0d13;
-      border-right: 1px solid #222;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      transition: left 0.25s ease;
-      z-index: 999;
-    }
-
-    .mobile-link {
-      padding: 0.8rem 1rem;
-      background: #11131b;
-      border-radius: 0.6rem;
-      color: #ddd;
-      cursor: pointer;
-    }
-
-    .mobile-link:hover {
-      background: #1b1f2b;
       color: #fff;
+      font-family: system-ui, sans-serif;
+      padding: 2rem;
     }
 
-    .hero {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1.5rem;
-      border-bottom: 1px solid #222;
-    }
-    .hero-text h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-    .hero-text p { color: #ccc; max-width: 700px; }
-
-    .search-bar {
-      margin-top: 1.5rem;
-      display: flex;
-      gap: 0.5rem;
-    }
-    .search-bar input {
-      flex: 1;
-      padding: 0.7rem 0.9rem;
-      border-radius: 999px;
-      border: 1px solid #333;
-      background: #0b0d13;
-      color: #f5f5f5;
-    }
-    .search-bar button {
-      padding: 0.7rem 1.2rem;
-      border-radius: 999px;
-      border: none;
-      background: #4fd1ff;
-      color: #05060a;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .section { max-width: 1200px; margin: 2rem auto 0; padding: 0 1.5rem; }
-    .section h2 { font-size: 1.4rem; margin-bottom: 1rem; }
-
-    .game-result {
-      background: #0b0d13;
-      border-radius: 0.8rem;
-      padding: 1rem;
-      border: 1px solid #1b1f2b;
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
-      gap: 1rem;
-    }
-
-    @media (max-width: 700px) {
-      .game-result {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .game-img {
-      width: 100%;
-      border-radius: 0.8rem;
-      margin-bottom: 1rem;
-    }
-
-    .video-wrapper {
-      position: relative;
-      padding-bottom: 56.25%;
-      height: 0;
-      overflow: hidden;
-      border-radius: 0.8rem;
-      border: 1px solid #22263a;
-    }
-    .video-wrapper iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border: 0;
-    }
-
-    .no-result {
-      background: #11131b;
-      border-radius: 0.8rem;
-      padding: 1rem;
-      border: 1px solid #22263a;
-      font-size: 0.95rem;
-      color: #ccc;
-    }
-
-    .score-box-wrapper {
-      margin-top: 1.5rem;
-      display: flex;
-      justify-content: center;
-    }
-
-    .score-box {
-      background: #11131b;
-      padding: 1.2rem;
-      border-radius: 0.8rem;
-      border: 1px solid #22263a;
-      width: 100%;
-      max-width: 320px;
-      text-align: center;
-    }
-
-    .score-title {
-      font-size: 0.9rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #aaa;
-      margin-bottom: 0.5rem;
-    }
-
-    .score-number {
-      font-size: 3rem;
-      font-weight: 700;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      margin-bottom: 0.3rem;
-    }
-
-    .score-green { background: #2ecc71; color: #000; }
-    .score-yellow { background: #f1c40f; color: #000; }
-    .score-red { background: #e74c3c; color: #fff; }
-
-    .score-votes {
-      font-size: 0.9rem;
-      color: #bbb;
-      margin-bottom: 0.5rem;
-    }
-
-    .score-your {
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-      color: #ddd;
-    }
-
-    .score-input {
-      margin-top: 0.5rem;
-      width: 100%;
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      border: 1px solid #333;
-      background: #0b0d13;
-      color: #fff;
-      text-align: center;
-    }
-
-    .score-btn {
-      margin-top: 0.5rem;
-      padding: 0.7rem;
-      width: 100%;
-      border: none;
-      border-radius: 0.5rem;
-      background: #4fd1ff;
-      color: #000;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .score-btn:hover {
-      background: #6fe1ff;
-    }
-
-    .score-note {
-      margin-top: 0.4rem;
-      font-size: 0.8rem;
-      color: #888;
-    }
-
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
-    .modal-box {
+    .box {
+      max-width: 500px;
+      margin: auto;
       background: #0b0d13;
       padding: 2rem;
       border-radius: 1rem;
-      width: 90%;
-      max-width: 420px;
-      border: 1px solid #1b1f2b;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
+      border: 1px solid #222;
     }
-    .modal-close {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      background: transparent;
+
+    .title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #4fd1ff;
+    }
+
+    .item {
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .logout-btn {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.8rem;
+      background: #4fd1ff;
       border: none;
-      color: #fff;
-      font-size: 1.2rem;
+      border-radius: 0.5rem;
+      color: #000;
+      font-weight: 600;
       cursor: pointer;
     }
   </style>
@@ -304,110 +49,44 @@
 
 <body>
 
-  <div class="mobile-overlay" id="mobileOverlay"></div>
+  <div class="box">
+    <div class="title">Tu Perfil</div>
 
-  <div class="mobile-menu" id="mobileMenu">
-    <div class="mobile-link" id="mobileHome">Inicio</div>
-    <div class="mobile-link" id="mobileProfile">Perfil</div>
-    <div class="mobile-link" id="mobileLogin">Iniciar sesión</div>
-    <div class="mobile-link" id="mobileLogout">Cerrar sesión</div>
+    <div class="item"><strong>Email:</strong> <span id="userEmail"></span></div>
+    <div class="item"><strong>UID:</strong> <span id="userUID"></span></div>
+
+    <button class="logout-btn" id="logoutBtn">Cerrar sesión</button>
   </div>
-
-  <header class="header">
-    <div class="hamburger" id="hamburgerBtn">
-      <div></div>
-      <div></div>
-      <div></div>
-    </div>
-
-    <div class="logo">
-      <span class="logo-main">OwnedScore</span>
-      <span class="logo-sub">La verdad del jugador</span>
-    </div>
-
-    <nav class="nav">
-      <a class="nav-link" id="navHome">Inicio</a>
-      <a class="nav-link" id="navProfile">Perfil</a>
-      <a class="nav-link nav-cta" id="navLogin">Iniciar sesión</a>
-      <a class="nav-link nav-cta" id="navLogout" style="display:none;">Cerrar sesión</a>
-    </nav>
-  </header>
-
-  <!-- Modal Login -->
-  <div class="modal-overlay" id="loginModal">
-    <div class="modal-box">
-      <button class="modal-close" id="closeLoginModal">✕</button>
-      <h2>Iniciar sesión</h2>
-
-      <input id="loginEmail" type="email" placeholder="Correo electrónico" class="score-input" />
-      <input id="loginPassword" type="password" placeholder="Contraseña" class="score-input" />
-
-      <button id="loginBtn" class="score-btn">Entrar</button>
-
-      <p class="score-note">
-        ¿No tienes cuenta?
-        <span id="openRegisterFromLogin" style="color:#4fd1ff; cursor:pointer;">Regístrate aquí</span>
-      </p>
-    </div>
-  </div>
-
-  <!-- Modal Registro -->
-  <div class="modal-overlay" id="registerModal">
-    <div class="modal-box">
-      <button class="modal-close" id="closeRegisterModal">✕</button>
-      <h2>Crear cuenta</h2>
-
-      <input id="registerEmail" type="email" placeholder="Correo electrónico" class="score-input" />
-      <input id="registerPassword" type="password" placeholder="Contraseña" class="score-input" />
-
-      <button id="registerBtn" class="score-btn">Registrarme</button>
-
-      <p class="score-note">
-        ¿Ya tienes cuenta?
-        <span id="openLoginFromRegister" style="color:#4fd1ff; cursor:pointer;">Inicia sesión</span>
-      </p>
-    </div>
-  </div>
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Encuentra la verdad de tus juegos</h1>
-      <p>Busca cualquier título y descubre su puntuación real, trailers, plataformas y más.</p>
-    </div>
-
-    <div class="search-bar">
-      <input id="searchInput" type="text" placeholder="Buscar juego..." />
-      <button id="searchBtn">Buscar</button>
-    </div>
-  </section>
-
-  <!-- RESULTADOS -->
-  <section class="section">
-    <h2>Resultados</h2>
-    <div id="resultsContainer"></div>
-  </section>
-
-  <!-- RAWG -->
-  <script type="module" src="rawg.js"></script>
 
   <!-- FIREBASE -->
   <script type="module" src="firebase.js"></script>
 
-  <!-- AUTH -->
-  <script type="module" src="auth.js"></script>
+  <!-- PERFIL JS -->
+  <script type="module">
+    import { app } from "./firebase.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
-  <!-- REGISTER -->
-  <script type="module" src="register.js"></script>
+    const auth = getAuth(app);
 
-  <!-- SCORE -->
-  <script type="module" src="score.js"></script>
+    const emailEl = document.getElementById("userEmail");
+    const uidEl = document.getElementById("userUID");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-  <!-- FIX PARPADEO -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      document.body.style.visibility = "visible";
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      emailEl.textContent = user.email;
+      uidEl.textContent = user.uid;
     });
+
+    logoutBtn.onclick = () => signOut(auth);
   </script>
 
 </body>
