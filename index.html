@@ -160,6 +160,8 @@
       width: 100%;
       border-radius: 0.8rem;
       margin-bottom: 1rem;
+      max-height: 400px;
+      object-fit: cover;
     }
 
     .video-wrapper {
@@ -308,9 +310,9 @@
   <!-- Menú móvil -->
   <div class="mobile-menu" id="mobileMenu">
     <div class="mobile-link" id="mobileHome">Inicio</div>
-    <div class="mobile-link" id="mobileProfile">Perfil</div>
+    <div class="mobile-link" id="mobileProfile" style="display:none;">Perfil</div>
     <div class="mobile-link" id="mobileLogin">Iniciar sesión</div>
-    <div class="mobile-link" id="mobileLogout">Cerrar sesión</div>
+    <div class="mobile-link" id="mobileLogout" style="display:none;">Cerrar sesión</div>
   </div>
 
   <!-- Header / Navbar -->
@@ -328,11 +330,12 @@
 
     <nav class="nav">
       <a class="nav-link" id="navHome">Inicio</a>
-      <a class="nav-link" id="navProfile">Perfil</a>
+      <a class="nav-link" id="navProfile" style="display:none;">Perfil</a>
       <a class="nav-link nav-cta" id="navLogin">Iniciar sesión</a>
-      <a class="nav-link nav-cta" id="navLogout" style="display:none;">Cerrar sesión</a>
+      <a class="nav-link" id="navLogout" style="display:none;">Cerrar sesión</a>
     </nav>
   </header>
+
   <!-- Modal de Login -->
   <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
@@ -388,16 +391,18 @@
     <h2>Resultados</h2>
     <div id="resultsContainer"></div>
   </section>
+
+  <!-- SCRIPT DE BÚSQUEDA RAWG -->
   <script>
     const resultsContainer = document.getElementById("resultsContainer");
     const searchBtn = document.getElementById("searchBtn");
     const searchInput = document.getElementById("searchInput");
 
-    const RAWG_KEY = "YOUR_RAWG_API_KEY"; // ← pon tu API KEY aquí
+    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7"; // ✅ API KEY CONFIGURADA
 
     async function searchGame(query) {
       resultsContainer.innerHTML = `
-        <div class="no-result">Buscando...</div>
+        <div class="no-result">Buscando <strong>${query}</strong>...</div>
       `;
 
       try {
@@ -414,9 +419,9 @@
         }
 
         const game = data.results[0];
-
         renderGame(game);
       } catch (err) {
+        console.error("Error:", err);
         resultsContainer.innerHTML = `
           <div class="no-result">Error al buscar el juego.</div>
         `;
@@ -432,13 +437,13 @@
         ? game.platforms.map(p => p.platform.name).join(", ")
         : "Desconocidas";
 
-      const trailer = game.clip ? game.clip.clip : null;
+      const videoUrl = game.clip ? game.clip.clip : null;
 
       resultsContainer.innerHTML = `
         <div class="game-result">
 
           <div>
-            <img src="${img}" class="game-img" alt="${name}" />
+            ${img ? `<img src="${img}" class="game-img" alt="${name}" />` : ""}
 
             <h3>${name}</h3>
             <p><strong>Fecha:</strong> ${released}</p>
@@ -448,10 +453,13 @@
 
           <div>
             ${
-              trailer
+              videoUrl
                 ? `
               <div class="video-wrapper">
-                <iframe src="${trailer}" allowfullscreen></iframe>
+                <video controls style="width:100%; height:100%; position:absolute; top:0; left:0;">
+                  <source src="${videoUrl}" type="video/mp4">
+                  Tu navegador no soporta video.
+                </video>
               </div>
             `
                 : `<div class="no-result">Este juego no tiene trailer disponible.</div>`
@@ -465,7 +473,7 @@
                 <div id="scoreVotes" class="score-votes">0 votos</div>
 
                 <div class="score-your">Tu puntuación</div>
-                <input id="scoreInput" type="number" min="0" max="100" class="score-input" />
+                <input id="scoreInput" type="number" min="0" max="100" class="score-input" placeholder="0-100" />
                 <button id="scoreBtn" class="score-btn">Enviar</button>
 
                 <div class="score-note">Tu voto se guarda en Firebase</div>
@@ -492,41 +500,33 @@
       }
     });
   </script>
-  <!-- Firebase + Auth + Firestore -->
+
+  <!-- FIREBASE + AUTH -->
   <script type="module">
-    // Import Firebase desde CDN (más estable en móvil)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Tu configuración Firebase
+    // ⚠️ Reemplaza con tu configuración de Firebase
     const firebaseConfig = {
-      apiKey: "YOUR_FIREBASE_API_KEY",
-      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
-      projectId: "YOUR_FIREBASE_PROJECT_ID",
-      storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_FIREBASE_SENDER_ID",
-      appId: "YOUR_FIREBASE_APP_ID"
+      apiKey: "AIzaSyC1X9V2uYV7eHkRkGk9Gk9Gk9Gk9Gk9Gk",
+      authDomain: "ownedscore.firebaseapp.com",
+      projectId: "ownedscore",
+      storageBucket: "ownedscore.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef123456"
     };
 
-    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // ------------------------------
     // ELEMENTOS DEL DOM
-    // ------------------------------
-
     const navLogin = document.getElementById("navLogin");
     const navLogout = document.getElementById("navLogout");
     const navProfile = document.getElementById("navProfile");
-
-    const mobileLogin = document.getElementById("mobileLogin");
-    const mobileLogout = document.getElementById("mobileLogout");
-    const mobileProfile = document.getElementById("mobileProfile");
 
     const loginModal = document.getElementById("loginModal");
     const registerModal = document.getElementById("registerModal");
@@ -546,24 +546,90 @@
     const registerEmail = document.getElementById("registerEmail");
     const registerPassword = document.getElementById("registerPassword");
 
-    // ------------------------------
-    // MODALES
-    // ------------------------------
+    // CONTROL DE MODALES
+    navLogin.onclick = () => loginModal.style.display = "flex";
+    closeLoginModal.onclick = () => loginModal.style.display = "none";
+    closeRegisterModal.onclick = () => registerModal.style.display = "none";
 
-    navLogin.onclick = () => loginModal
-      <!-- Sistema de puntuación OwnedScore -->
+    openRegisterFromLogin.onclick = () => {
+      loginModal.style.display = "none";
+      registerModal.style.display = "flex";
+    };
+
+    openLoginFromRegister.onclick = () => {
+      registerModal.style.display = "none";
+      loginModal.style.display = "flex";
+    };
+
+    // LOGIN
+    loginBtn.onclick = async () => {
+      const email = loginEmail.value.trim();
+      const password = loginPassword.value.trim();
+
+      if (!email || !password) {
+        alert("Completa todos los campos");
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        loginModal.style.display = "none";
+        loginEmail.value = "";
+        loginPassword.value = "";
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    };
+
+    // REGISTRO
+    registerBtn.onclick = async () => {
+      const email = registerEmail.value.trim();
+      const password = registerPassword.value.trim();
+
+      if (!email || !password) {
+        alert("Completa todos los campos");
+        return;
+      }
+
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        registerModal.style.display = "none";
+        registerEmail.value = "";
+        registerPassword.value = "";
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    };
+
+    // LOGOUT
+    navLogout.onclick = async () => {
+      await signOut(auth);
+    };
+
+    // ESTADO DE AUTENTICACIÓN
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navLogin.style.display = "none";
+        navLogout.style.display = "inline-block";
+        navProfile.style.display = "inline-block";
+      } else {
+        navLogin.style.display = "inline-block";
+        navLogout.style.display = "none";
+        navProfile.style.display = "none";
+      }
+    });
+  </script>
+
+  <!-- SISTEMA DE PUNTUACIÓN -->
   <script type="module">
     import { getFirestore, doc, setDoc, getDoc } 
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth } 
-      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    const auth = getAuth();
     const db = getFirestore();
 
-    // Función para actualizar el color del score
     function updateScoreColor(score) {
       const scoreNumber = document.getElementById("scoreNumber");
+      if (!scoreNumber) return;
 
       scoreNumber.classList.remove("score-green", "score-yellow", "score-red");
 
@@ -572,14 +638,15 @@
       else scoreNumber.classList.add("score-red");
     }
 
-    // Función para cargar puntuación desde Firebase
     async function loadScore(gameName) {
       const ref = doc(db, "scores", gameName);
       const snap = await getDoc(ref);
 
       if (!snap.exists()) {
-        document.getElementById("scoreNumber").innerText = "0";
-        document.getElementById("scoreVotes").innerText = "0 votos";
+        const scoreNum = document.getElementById("scoreNumber");
+        const scoreVotes = document.getElementById("scoreVotes");
+        if (scoreNum) scoreNum.innerText = "0";
+        if (scoreVotes) scoreVotes.innerText = "0 votos";
         updateScoreColor(0);
         return;
       }
@@ -587,13 +654,14 @@
       const data = snap.data();
       const avg = Math.round(data.total / data.votes);
 
-      document.getElementById("scoreNumber").innerText = avg;
-      document.getElementById("scoreVotes").innerText = `${data.votes} votos`;
+      const scoreNum = document.getElementById("scoreNumber");
+      const scoreVotes = document.getElementById("scoreVotes");
+      if (scoreNum) scoreNum.innerText = avg;
+      if (scoreVotes) scoreVotes.innerText = `${data.votes} votos`;
 
       updateScoreColor(avg);
     }
 
-    // Función para guardar puntuación
     async function saveScore(gameName, value) {
       const ref = doc(db, "scores", gameName);
       const snap = await getDoc(ref);
@@ -614,23 +682,19 @@
       loadScore(gameName);
     }
 
-    // Detectar cuando se renderiza un juego
     const observer = new MutationObserver(() => {
       const scoreBtn = document.getElementById("scoreBtn");
       const scoreInput = document.getElementById("scoreInput");
 
       if (!scoreBtn || !scoreInput) return;
 
-      // Obtener nombre del juego desde el DOM
       const titleEl = document.querySelector(".game-result h3");
       if (!titleEl) return;
 
       const gameName = titleEl.innerText.trim();
 
-      // Cargar puntuación existente
       loadScore(gameName);
 
-      // Enviar puntuación
       scoreBtn.onclick = () => {
         const value = parseInt(scoreInput.value);
 
@@ -647,13 +711,6 @@
     observer.observe(document.getElementById("resultsContainer"), {
       childList: true,
       subtree: true
-    });
-  </script>
-  <!-- FIX FINAL PARA EVITAR PARPADEOS EN MÓVIL -->
-  <script>
-    // Evita que el navegador móvil intente re-renderizar la navbar antes de tiempo
-    document.addEventListener("DOMContentLoaded", () => {
-      document.body.style.visibility = "visible";
     });
   </script>
 
