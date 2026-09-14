@@ -15,7 +15,6 @@
       overflow-x: hidden;
     }
 
-    /* HEADER */
     .header {
       max-width: 1200px;
       margin: 0 auto;
@@ -26,7 +25,6 @@
       border-bottom: 1px solid #222;
     }
 
-    /* HAMBURGUESA IZQUIERDA */
     .hamburger {
       display: none;
       flex-direction: column;
@@ -40,14 +38,12 @@
       border-radius: 3px;
     }
 
-    /* LOGO DERECHA */
     .logo {
       text-align: right;
     }
     .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
     .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
 
-    /* DESKTOP NAV */
     .nav {
       display: flex;
       gap: 1rem;
@@ -67,13 +63,11 @@
     .nav-link:hover { background: #1b1f2b; color: #fff; }
     .nav-cta { background: #4fd1ff; color: #05060a; font-weight: 600; }
 
-    /* MOBILE BREAKPOINT */
     @media (max-width: 700px) {
       .nav { display: none; }
       .hamburger { display: flex; }
     }
 
-    /* MOBILE MENU */
     .mobile-overlay {
       position: fixed;
       inset: 0;
@@ -111,7 +105,6 @@
       color: #fff;
     }
 
-    /* HERO */
     .hero {
       max-width: 1200px;
       margin: 0 auto;
@@ -144,7 +137,6 @@
       cursor: pointer;
     }
 
-    /* RESULTS */
     .section { max-width: 1200px; margin: 2rem auto 0; padding: 0 1.5rem; }
     .section h2 { font-size: 1.4rem; margin-bottom: 1rem; }
 
@@ -194,7 +186,6 @@
       color: #ccc;
     }
 
-    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -231,23 +222,18 @@
 
 <body>
 
-  <!-- HEADER -->
   <header class="header">
-
-    <!-- HAMBURGUESA IZQUIERDA -->
     <div class="hamburger" id="hamburger">
       <div></div>
       <div></div>
       <div></div>
     </div>
 
-    <!-- LOGO DERECHA -->
     <div class="logo">
       <span class="logo-main">OwnedScore</span>
       <span class="logo-sub">La verdad del videojuego la dice quien lo juega.</span>
     </div>
 
-    <!-- DESKTOP NAV -->
     <nav class="nav">
       <a class="nav-link" id="goHome">Inicio</a>
       <a class="nav-link" id="goGames">Juegos</a>
@@ -257,13 +243,10 @@
       <a class="nav-link nav-cta" id="loginBtnNav">Iniciar sesión</a>
       <a class="nav-link" id="logoutBtn" style="display:none;">Cerrar sesión</a>
     </nav>
-
   </header>
 
-  <!-- MOBILE OVERLAY -->
   <div class="mobile-overlay" id="mobileOverlay"></div>
 
-  <!-- MOBILE MENU -->
   <div class="mobile-menu" id="mobileMenu">
     <div class="mobile-link" id="mHome">Inicio</div>
     <div class="mobile-link" id="mGames">Juegos</div>
@@ -274,7 +257,6 @@
     <div class="mobile-link" id="mLogout" style="display:none;">Cerrar sesión</div>
   </div>
 
-  <!-- MODAL LOGIN -->
   <div id="loginModal" class="modal-overlay">
     <div class="modal-box">
       <button class="modal-close" id="closeModal">✕</button>
@@ -291,7 +273,6 @@
     </div>
   </div>
 
-  <!-- HERO -->
   <section class="hero">
     <div class="hero-text">
       <h1>Puntuaciones reales de jugadores verificados</h1>
@@ -309,7 +290,6 @@
     </form>
   </section>
 
-  <!-- RESULTADOS -->
   <main class="main">
     <section class="section">
       <h2>Resultado de búsqueda</h2>
@@ -317,7 +297,6 @@
     </section>
   </main>
 
-  <!-- RAWG BUSCADOR -->
   <script>
     const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
 
@@ -325,56 +304,81 @@
     const input = document.getElementById("searchInput");
     const result = document.getElementById("resultContainer");
 
+    function filtrarPlataformas(game) {
+      if (!game.platforms) return [];
+      const fecha = game.released ? new Date(game.released) : null;
+      const plataformas = game.platforms.map(p => p.platform.name);
+
+      let filtradas = plataformas;
+
+      if (fecha && fecha < new Date("2017-03-03")) {
+        filtradas = filtradas.filter(nombre => nombre !== "Nintendo Switch");
+      }
+
+      return [...new Set(filtradas)];
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const q = input.value.trim();
 
-      result.innerHTML = `<div class="no-result">Buscando <strong>${q}</strong>...</div>`;
-
-      const res = await fetch(`https://api.rawg.io/api/games?search=${q}&key=${RAWG_KEY}`);
-      const data = await res.json();
-
-      if (!data.results || data.results.length === 0) {
-        result.innerHTML = `<div class="no-result">No se encontró <strong>${q}</strong>.</div>`;
+      if (!q) {
+        result.innerHTML = `<div class="no-result">Escribe el nombre de un juego.</div>`;
         return;
       }
 
-      const game = data.results[0];
+      result.innerHTML = `<div class="no-result">Buscando <strong>${q}</strong>...</div>`;
 
-      const trailerRes = await fetch(`https://api.rawg.io/api/games/${game.id}/movies?key=${RAWG_KEY}`);
-      const trailerData = await trailerRes.json();
-      const trailer = trailerData.results?.[0]?.data?.max;
+      try {
+        const res = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(q)}&key=${RAWG_KEY}`);
+        const data = await res.json();
 
-      result.innerHTML = `
-        <div class="game-result">
-          <div>
-            <img src="${game.background_image}" class="game-img">
+        if (!data.results || data.results.length === 0) {
+          result.innerHTML = `<div class="no-result">No se encontró <strong>${q}</strong>.</div>`;
+          return;
+        }
 
-            <h3>${game.name}</h3>
-            <p><strong>Géneros:</strong> ${game.genres.map(g => g.name).join(", ")}</p>
-            <p><strong>Plataformas:</strong> ${game.platforms.map(p => p.platform.name).join(", ")}</p>
-            <p><strong>Lanzamiento:</strong> ${game.released}</p>
-            <p><strong>Puntuación RAWG:</strong> ${game.rating}</p>
+        const game = data.results[0];
+
+        const trailerRes = await fetch(`https://api.rawg.io/api/games/${game.id}/movies?key=${RAWG_KEY}`);
+        const trailerData = await trailerRes.json();
+        const trailer = trailerData.results?.[0]?.data?.max;
+
+        const plataformasFiltradas = filtrarPlataformas(game);
+
+        result.innerHTML = `
+          <div class="game-result">
+            <div>
+              ${game.background_image ? `<img src="${game.background_image}" class="game-img">` : ""}
+              <h3>${game.name}</h3>
+              <p><strong>Géneros:</strong> ${game.genres?.map(g => g.name).join(", ") || "Sin datos"}</p>
+              <p><strong>Plataformas:</strong> ${plataformasFiltradas.length ? plataformasFiltradas.join(", ") : "Sin datos fiables"}</p>
+              <p><strong>Lanzamiento:</strong> ${game.released || "Sin fecha"}</p>
+              <p><strong>Puntuación RAWG:</strong> ${game.rating || "Sin puntuación"}</p>
+              <p style="margin-top:0.5rem; font-size:0.85rem; color:#888;">
+                Algunas plataformas se filtran automáticamente para evitar datos incorrectos.
+              </p>
+            </div>
+
+            <div class="video-wrapper">
+              ${
+                trailer
+                  ? `<iframe src="${trailer}" allowfullscreen></iframe>`
+                  : `<div class="no-result">Sin trailer disponible.</div>`
+              }
+            </div>
           </div>
-
-          <div class="video-wrapper">
-            ${
-              trailer
-                ? `<iframe src="${trailer}" allowfullscreen></iframe>`
-                : `<div class="no-result">Sin trailer disponible.</div>`
-            }
-          </div>
-        </div>
-      `;
+        `;
+      } catch (err) {
+        result.innerHTML = `<div class="no-result">Error al consultar RAWG. Intenta de nuevo.</div>`;
+      }
     });
   </script>
 
-  <!-- FIREBASE -->
   <script type="module" src="firebase.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="register.js"></script>
 
-  <!-- MODAL LOGIC -->
   <script>
     const loginBtnNav = document.getElementById('loginBtnNav');
     const loginModal = document.getElementById('loginModal');
@@ -395,24 +399,24 @@
     });
   </script>
 
-  <!-- MOBILE MENU LOGIC -->
   <script>
     const hamburger = document.getElementById("hamburger");
     const mobileMenu = document.getElementById("mobileMenu");
     const mobileOverlay = document.getElementById("mobileOverlay");
+
+    function cerrarMenuMovil() {
+      mobileMenu.style.left = "-260px";
+      mobileOverlay.style.display = "none";
+    }
 
     hamburger.addEventListener("click", () => {
       mobileMenu.style.left = "0px";
       mobileOverlay.style.display = "block";
     });
 
-    mobileOverlay.addEventListener("click", () => {
-      mobileMenu.style.left = "-260px";
-      mobileOverlay.style.display = "none";
-    });
+    mobileOverlay.addEventListener("click", cerrarMenuMovil);
   </script>
 
-  <!-- NAVBAR DINÁMICA -->
   <script type="module">
     import { auth } from "./firebase.js";
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
@@ -425,6 +429,26 @@
     const mProfile = document.getElementById("mProfile");
     const mLogout = document.getElementById("mLogout");
 
+    const goHome = document.getElementById("goHome");
+    const goGames = document.getElementById("goGames");
+    const goRanking = document.getElementById("goRanking");
+
+    const mHome = document.getElementById("mHome");
+    const mGames = document.getElementById("mGames");
+    const mRanking = document.getElementById("mRanking");
+
+    function navTo(url) {
+      window.location.href = url;
+    }
+
+    goHome.onclick = () => navTo("index.html");
+    goGames.onclick = () => navTo("juegos.html");
+    goRanking.onclick = () => navTo("ranking.html");
+
+    mHome.onclick = () => { cerrarMenuMovil(); navTo("index.html"); };
+    mGames.onclick = () => { cerrarMenuMovil(); navTo("juegos.html"); };
+    mRanking.onclick = () => { cerrarMenuMovil(); navTo("ranking.html"); };
+
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loginBtnNav.style.display = "none";
@@ -435,17 +459,18 @@
         mProfile.style.display = "block";
         mLogout.style.display = "block";
 
-        profileLink.onclick = () => window.location.href = "perfil.html";
-        mProfile.onclick = () => window.location.href = "perfil.html";
+        profileLink.onclick = () => navTo("perfil.html");
+        mProfile.onclick = () => { cerrarMenuMovil(); navTo("perfil.html"); };
 
         logoutBtn.onclick = async () => {
           await signOut(auth);
-          window.location.href = "index.html";
+          navTo("index.html");
         };
 
         mLogout.onclick = async () => {
+          cerrarMenuMovil();
           await signOut(auth);
-          window.location.href = "index.html";
+          navTo("index.html");
         };
 
       } else {
@@ -458,8 +483,7 @@
         mLogout.style.display = "none";
 
         mLogin.onclick = () => {
-          mobileMenu.style.left = "-260px";
-          mobileOverlay.style.display = "none";
+          cerrarMenuMovil();
           loginModal.style.display = "flex";
         };
       }
