@@ -13,30 +13,58 @@
       color: #f5f5f5;
       line-height: 1.5;
     }
-    .header, .main {
+
+    /* HEADER */
+    .header {
       max-width: 1200px;
       margin: 0 auto;
       padding: 1.5rem;
-    }
-    .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #222;
+      flex-wrap: wrap;
     }
+
     .logo-main { font-weight: 700; font-size: 1.4rem; color: #4fd1ff; }
     .logo-sub { display: block; font-size: 0.85rem; color: #aaa; }
 
-    .nav { display: flex; gap: 1rem; }
+    /* NAV */
+    .nav {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
     .nav-link {
-      font-size: 0.95rem; color: #ddd; text-decoration: none;
-      padding: 0.4rem 0.7rem; border-radius: 999px;
+      font-size: 0.95rem;
+      color: #ddd;
+      text-decoration: none;
+      padding: 0.4rem 0.7rem;
+      border-radius: 999px;
       transition: background 0.2s, color 0.2s;
       cursor: pointer;
+      white-space: nowrap;
     }
+
     .nav-link:hover { background: #1b1f2b; color: #fff; }
     .nav-cta { background: #4fd1ff; color: #05060a; font-weight: 600; }
 
+    /* MOBILE FIX */
+    @media (max-width: 600px) {
+      .nav {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+      }
+      .nav-link {
+        width: 100%;
+        text-align: left;
+      }
+    }
+
+    /* HERO */
     .hero {
       max-width: 1200px;
       margin: 0 auto;
@@ -69,6 +97,7 @@
       cursor: pointer;
     }
 
+    /* RESULTS */
     .section { max-width: 1200px; margin: 2rem auto 0; padding: 0 1.5rem; }
     .section h2 { font-size: 1.4rem; margin-bottom: 1rem; }
 
@@ -81,6 +110,13 @@
       grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
       gap: 1rem;
     }
+
+    @media (max-width: 600px) {
+      .game-result {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .video-wrapper {
       position: relative;
       padding-bottom: 56.25%;
@@ -95,6 +131,7 @@
       width: 100%; height: 100%;
       border: 0;
     }
+
     .no-result {
       background: #11131b;
       border-radius: 0.8rem;
@@ -104,7 +141,7 @@
       color: #ccc;
     }
 
-    /* Modal */
+    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -280,24 +317,3 @@
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        loginBtnNav.style.display = "none";
-        profileLink.style.display = "inline-block";
-        logoutBtn.style.display = "inline-block";
-
-        profileLink.onclick = () => window.location.href = "perfil.html";
-
-        logoutBtn.onclick = async () => {
-          await signOut(auth);
-          window.location.href = "index.html";
-        };
-
-      } else {
-        loginBtnNav.style.display = "inline-block";
-        profileLink.style.display = "none";
-        logoutBtn.style.display = "none";
-      }
-    });
-  </script>
-
-</body>
-</html>
