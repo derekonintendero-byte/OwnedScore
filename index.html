@@ -405,6 +405,27 @@
     mobileOverlay.addEventListener("click", cerrarMenuMovil);
   </script>
 
+  <!-- 🔥 FIX: BOTÓN INICIAR SESIÓN FUNCIONAL -->
+  <script>
+    const loginBtnNav = document.getElementById('loginBtnNav');
+    const loginModal = document.getElementById('loginModal');
+    const closeModal = document.getElementById('closeModal');
+
+    loginBtnNav.addEventListener('click', (e) => {
+      e.preventDefault();
+      loginModal.style.display = 'flex';
+    });
+
+    closeModal.addEventListener('click', () => {
+      loginModal.style.display = 'none';
+    });
+
+    loginModal.addEventListener('click', (e) => {
+      if (e.target === loginModal) {
+        loginModal.style.display = 'none';
+      }
+    });
+  </script>
+
 </body>
 </html>
-
