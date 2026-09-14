@@ -300,11 +300,22 @@
     }
   </style>
 </head>
-
 <body>
 
+  <!-- Overlay móvil -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <!-- Menú móvil -->
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-link" id="mobileHome">Inicio</div>
+    <div class="mobile-link" id="mobileProfile">Perfil</div>
+    <div class="mobile-link" id="mobileLogin">Iniciar sesión</div>
+    <div class="mobile-link" id="mobileLogout">Cerrar sesión</div>
+  </div>
+
+  <!-- Header / Navbar -->
   <header class="header">
-    <div class="hamburger" id="hamburger">
+    <div class="hamburger" id="hamburgerBtn">
       <div></div>
       <div></div>
       <div></div>
@@ -312,175 +323,339 @@
 
     <div class="logo">
       <span class="logo-main">OwnedScore</span>
-      <span class="logo-sub">La verdad del videojuego la dice quien lo juega.</span>
+      <span class="logo-sub">La verdad del jugador</span>
     </div>
 
     <nav class="nav">
-      <a class="nav-link" id="goHome">Inicio</a>
-      <a class="nav-link" id="goGames">Juegos</a>
-      <a class="nav-link" id="goRanking">Ranking</a>
-
-      <a class="nav-link" id="profileLink" style="display:none;">Mi perfil</a>
-      <a class="nav-link nav-cta" id="loginBtnNav">Iniciar sesión</a>
-      <a class="nav-link" id="logoutBtn" style="display:none;">Cerrar sesión</a>
+      <a class="nav-link" id="navHome">Inicio</a>
+      <a class="nav-link" id="navProfile">Perfil</a>
+      <a class="nav-link nav-cta" id="navLogin">Iniciar sesión</a>
+      <a class="nav-link nav-cta" id="navLogout" style="display:none;">Cerrar sesión</a>
     </nav>
   </header>
-
-  <div class="mobile-overlay" id="mobileOverlay"></div>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <div class="mobile-link" id="mHome">Inicio</div>
-    <div class="mobile-link" id="mGames">Juegos</div>
-    <div class="mobile-link" id="mRanking">Ranking</div>
-
-    <div class="mobile-link" id="mProfile" style="display:none;">Mi perfil</div>
-    <div class="mobile-link" id="mLogin">Iniciar sesión</div>
-    <div class="mobile-link" id="mLogout" style="display:none;">Cerrar sesión</div>
-  </div>
-
-  <div id="loginModal" class="modal-overlay">
+  <!-- Modal de Login -->
+  <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
-      <button class="modal-close" id="closeModal">✕</button>
-
+      <button class="modal-close" id="closeLoginModal">✕</button>
       <h2>Iniciar sesión</h2>
-      <input id="login-email" type="email" placeholder="Email">
-      <input id="login-pass" type="password" placeholder="Contraseña">
-      <button id="login-btn">Iniciar sesión</button>
 
-      <h2>Crear cuenta</h2>
-      <input id="register-email" type="email" placeholder="Email">
-      <input id="register-pass" type="password" placeholder="Contraseña">
-      <button id="register-btn">Crear cuenta</button>
-    </div>
-  </div>
+      <input id="loginEmail" type="email" placeholder="Correo electrónico" class="score-input" />
+      <input id="loginPassword" type="password" placeholder="Contraseña" class="score-input" />
 
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Puntuaciones reales de jugadores verificados</h1>
-      <p>Aquí no gana quien paga: gana la realidad.</p>
+      <button id="loginBtn" class="score-btn">Entrar</button>
 
-      <p style="margin-top:1rem; color:#bbb; max-width:700px;">
-        <strong>OwnedScore nació porque estoy cansado de las puntuaciones infladas, los análisis comprados y las reseñas que no representan a los jugadores reales.</strong>
-        Aquí no gana quien paga: gana la verdad del jugador. Cada reseña cuenta, cada voz importa, y cada puntuación viene de alguien que realmente jugó.
+      <p class="score-note">
+        ¿No tienes cuenta?
+        <span id="openRegisterFromLogin" style="color:#4fd1ff; cursor:pointer;">Regístrate aquí</span>
       </p>
     </div>
+  </div>
 
-    <form class="search-bar" id="searchForm">
-      <input id="searchInput" type="text" placeholder="Buscar cualquier juego..." />
-      <button type="submit">Buscar</button>
-    </form>
+  <!-- Modal de Registro -->
+  <div class="modal-overlay" id="registerModal">
+    <div class="modal-box">
+      <button class="modal-close" id="closeRegisterModal">✕</button>
+      <h2>Crear cuenta</h2>
+
+      <input id="registerEmail" type="email" placeholder="Correo electrónico" class="score-input" />
+      <input id="registerPassword" type="password" placeholder="Contraseña" class="score-input" />
+
+      <button id="registerBtn" class="score-btn">Registrarme</button>
+
+      <p class="score-note">
+        ¿Ya tienes cuenta?
+        <span id="openLoginFromRegister" style="color:#4fd1ff; cursor:pointer;">Inicia sesión</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Encuentra la verdad de tus juegos</h1>
+      <p>Busca cualquier título y descubre su puntuación real, trailers, plataformas y más.</p>
+    </div>
+
+    <!-- Buscador -->
+    <div class="search-bar">
+      <input id="searchInput" type="text" placeholder="Buscar juego..." />
+      <button id="searchBtn">Buscar</button>
+    </div>
   </section>
 
-  <main class="main">
-    <section class="section">
-      <h2>Resultado de búsqueda</h2>
-      <div id="resultContainer"></div>
-    </section>
-  </main>
-
-  <!-- RAWG -->
+  <!-- Sección de resultados -->
+  <section class="section">
+    <h2>Resultados</h2>
+    <div id="resultsContainer"></div>
+  </section>
   <script>
-    const RAWG_KEY = "3b728b12720b40cc8528d4052ba715d7";
+    const resultsContainer = document.getElementById("resultsContainer");
+    const searchBtn = document.getElementById("searchBtn");
+    const searchInput = document.getElementById("searchInput");
 
-    const form = document.getElementById("searchForm");
-    const input = document.getElementById("searchInput");
-    const result = document.getElementById("resultContainer");
+    const RAWG_KEY = "YOUR_RAWG_API_KEY"; // ← pon tu API KEY aquí
 
-    function filtrarPlataformas(game) {
-      if (!game.platforms) return [];
-      const fecha = game.released ? new Date(game.released) : null;
-      const plataformas = game.platforms.map(p => p.platform.name);
-
-      let filtradas = plataformas;
-
-      if (fecha && fecha < new Date("2017-03-03")) {
-        filtradas = filtradas.filter(nombre => nombre !== "Nintendo Switch");
-      }
-
-      return [...new Set(filtradas)];
-    }
-
-    window.addEventListener("OwnedScoreSearch", async (ev) => {
-      const q = ev.detail;
-
-      result.innerHTML = `<div class="no-result">Buscando <strong>${q}</strong>...</div>`;
-
-      const res = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(q)}&key=${RAWG_KEY}`);
-      const data = await res.json();
-
-      if (!data.results || data.results.length === 0) {
-        result.innerHTML = `<div class="no-result">No se encontró <strong>${q}</strong>.</div>`;
-        return;
-      }
-
-      const game = data.results[0];
-      const gameId = game.id;
-
-      const trailerRes = await fetch(`https://api.rawg.io/api/games/${gameId}/movies?key=${RAWG_KEY}`);
-      const trailerData = await trailerRes.json();
-      const trailer = trailerData.results?.[0]?.data?.max;
-
-      const plataformasFiltradas = filtrarPlataformas(game);
-
-      result.innerHTML = `
-        <div class="game-result">
-          <div>
-            ${game.background_image ? `<img src="${game.background_image}" class="game-img">` : ""}
-            <h3>${game.name}</h3>
-            <p><strong>Géneros:</strong> ${game.genres?.map(g => g.name).join(", ")}</p>
-            <p><strong>Plataformas:</strong> ${plataformasFiltradas.join(", ")}</p>
-            <p><strong>Lanzamiento:</strong> ${game.released}</p>
-            <p><strong>Puntuación RAWG:</strong> ${game.rating}</p>
-          </div>
-
-          <div class="video-wrapper">
-            ${
-              trailer
-                ? `<iframe src="${trailer}" allowfullscreen></iframe>`
-                : `<div class="no-result">Sin trailer disponible.</div>`
-            }
-          </div>
-        </div>
+    async function searchGame(query) {
+      resultsContainer.innerHTML = `
+        <div class="no-result">Buscando...</div>
       `;
 
-      renderRatingBox(gameId);
+      try {
+        const res = await fetch(
+          `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${RAWG_KEY}`
+        );
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+          resultsContainer.innerHTML = `
+            <div class="no-result">No se encontró ningún juego con ese nombre.</div>
+          `;
+          return;
+        }
+
+        const game = data.results[0];
+
+        renderGame(game);
+      } catch (err) {
+        resultsContainer.innerHTML = `
+          <div class="no-result">Error al buscar el juego.</div>
+        `;
+      }
+    }
+
+    function renderGame(game) {
+      const img = game.background_image || "";
+      const name = game.name || "Sin nombre";
+      const released = game.released || "Fecha desconocida";
+      const rating = game.rating || 0;
+      const platforms = game.platforms
+        ? game.platforms.map(p => p.platform.name).join(", ")
+        : "Desconocidas";
+
+      const trailer = game.clip ? game.clip.clip : null;
+
+      resultsContainer.innerHTML = `
+        <div class="game-result">
+
+          <div>
+            <img src="${img}" class="game-img" alt="${name}" />
+
+            <h3>${name}</h3>
+            <p><strong>Fecha:</strong> ${released}</p>
+            <p><strong>Plataformas:</strong> ${platforms}</p>
+            <p><strong>Rating RAWG:</strong> ${rating}</p>
+          </div>
+
+          <div>
+            ${
+              trailer
+                ? `
+              <div class="video-wrapper">
+                <iframe src="${trailer}" allowfullscreen></iframe>
+              </div>
+            `
+                : `<div class="no-result">Este juego no tiene trailer disponible.</div>`
+            }
+
+            <!-- Scorebox se renderiza aquí -->
+            <div class="score-box-wrapper">
+              <div class="score-box">
+                <div class="score-title">OwnedScore</div>
+                <div id="scoreNumber" class="score-number score-green">0</div>
+                <div id="scoreVotes" class="score-votes">0 votos</div>
+
+                <div class="score-your">Tu puntuación</div>
+                <input id="scoreInput" type="number" min="0" max="100" class="score-input" />
+                <button id="scoreBtn" class="score-btn">Enviar</button>
+
+                <div class="score-note">Tu voto se guarda en Firebase</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      `;
+    }
+
+    searchBtn.addEventListener("click", () => {
+      const q = searchInput.value.trim();
+      if (q.length === 0) return;
+      searchGame(q);
+    });
+
+    searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        const q = searchInput.value.trim();
+        if (q.length === 0) return;
+        searchGame(q);
+      }
     });
   </script>
-
-  <!-- FIREBASE -->
+  <!-- Firebase + Auth + Firestore -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    // Import Firebase desde CDN (más estable en móvil)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } 
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } 
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // Tu configuración Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyC1X9V2uYV7eHkRkGk9Gk9Gk9Gk9Gk9Gk",
-      authDomain: "ownedscore.firebaseapp.com",
-      projectId: "ownedscore",
-      storageBucket: "ownedscore.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdef123456"
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+      projectId: "YOUR_FIREBASE_PROJECT_ID",
+      storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_FIREBASE_SENDER_ID",
+      appId: "YOUR_FIREBASE_APP_ID"
     };
 
+    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const loginBtnNav = document.getElementById("loginBtnNav");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const profileLink = document.getElementById("profileLink");
-    const mLogin = document.getElementById("mLogin");
-    const mLogout = document.getElementById("mLogout");
-    const mProfile = document.getElementById("mProfile");
+    // ------------------------------
+    // ELEMENTOS DEL DOM
+    // ------------------------------
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        loginBtnNav.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        profileLink.style.display = "inline-block";
+    const navLogin = document.getElementById("navLogin");
+    const navLogout = document.getElementById("navLogout");
+    const navProfile = document.getElementById("navProfile");
 
-        mLogin.style.display = "none";
-        mLogout.style.display = "block";
-        mProfile.style.display = "block";
+    const mobileLogin = document.getElementById("mobileLogin");
+    const mobileLogout = document.getElementById("mobileLogout");
+    const mobileProfile = document.getElementById("mobileProfile");
+
+    const loginModal = document.getElementById("loginModal");
+    const registerModal = document.getElementById("registerModal");
+
+    const closeLoginModal = document.getElementById("closeLoginModal");
+    const closeRegisterModal = document.getElementById("closeRegisterModal");
+
+    const openRegisterFromLogin = document.getElementById("openRegisterFromLogin");
+    const openLoginFromRegister = document.getElementById("openLoginFromRegister");
+
+    const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
+
+    const loginEmail = document.getElementById("loginEmail");
+    const loginPassword = document.getElementById("loginPassword");
+
+    const registerEmail = document.getElementById("registerEmail");
+    const registerPassword = document.getElementById("registerPassword");
+
+    // ------------------------------
+    // MODALES
+    // ------------------------------
+
+    navLogin.onclick = () => loginModal
+      <!-- Sistema de puntuación OwnedScore -->
+  <script type="module">
+    import { getFirestore, doc, setDoc, getDoc } 
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth } 
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const auth = getAuth();
+    const db = getFirestore();
+
+    // Función para actualizar el color del score
+    function updateScoreColor(score) {
+      const scoreNumber = document.getElementById("scoreNumber");
+
+      scoreNumber.classList.remove("score-green", "score-yellow", "score-red");
+
+      if (score >= 75) scoreNumber.classList.add("score-green");
+      else if (score >= 50) scoreNumber.classList.add("score-yellow");
+      else scoreNumber.classList.add("score-red");
+    }
+
+    // Función para cargar puntuación desde Firebase
+    async function loadScore(gameName) {
+      const ref = doc(db, "scores", gameName);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        document.getElementById("scoreNumber").innerText = "0";
+        document.getElementById("scoreVotes").innerText = "0 votos";
+        updateScoreColor(0);
+        return;
+      }
+
+      const data = snap.data();
+      const avg = Math.round(data.total / data.votes);
+
+      document.getElementById("scoreNumber").innerText = avg;
+      document.getElementById("scoreVotes").innerText = `${data.votes} votos`;
+
+      updateScoreColor(avg);
+    }
+
+    // Función para guardar puntuación
+    async function saveScore(gameName, value) {
+      const ref = doc(db, "scores", gameName);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          total: value,
+          votes: 1
+        });
       } else {
-        loginBtnNav
+        const data = snap.data();
+        await setDoc(ref, {
+          total: data.total + value,
+          votes: data.votes + 1
+        });
+      }
+
+      loadScore(gameName);
+    }
+
+    // Detectar cuando se renderiza un juego
+    const observer = new MutationObserver(() => {
+      const scoreBtn = document.getElementById("scoreBtn");
+      const scoreInput = document.getElementById("scoreInput");
+
+      if (!scoreBtn || !scoreInput) return;
+
+      // Obtener nombre del juego desde el DOM
+      const titleEl = document.querySelector(".game-result h3");
+      if (!titleEl) return;
+
+      const gameName = titleEl.innerText.trim();
+
+      // Cargar puntuación existente
+      loadScore(gameName);
+
+      // Enviar puntuación
+      scoreBtn.onclick = () => {
+        const value = parseInt(scoreInput.value);
+
+        if (isNaN(value) || value < 0 || value > 100) {
+          alert("La puntuación debe ser entre 0 y 100");
+          return;
+        }
+
+        saveScore(gameName, value);
+        scoreInput.value = "";
+      };
+    });
+
+    observer.observe(document.getElementById("resultsContainer"), {
+      childList: true,
+      subtree: true
+    });
+  </script>
+  <!-- FIX FINAL PARA EVITAR PARPADEOS EN MÓVIL -->
+  <script>
+    // Evita que el navegador móvil intente re-renderizar la navbar antes de tiempo
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.style.visibility = "visible";
+    });
+  </script>
+
+</body>
+</html>
